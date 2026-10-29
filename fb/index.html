@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Kerületi Facebook-figyelő</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;600;700;800&family=Fraunces:ital,opsz,wght@1,9..144,600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#E4EDF8; --card:#FFFFFF; --head:#C8DAF2; --head-line:#B3CAE8; --soft:#DCE8F7; --cbg:#EAF1FA;
+  --line:#C3D5EC; --tag:#D3E3F8; --track:#D3DEEC;
+  --blue:#1F5BB8; --blue-dark:#17488F; --ink:#16233A; --ink2:#475871; --ink3:#36465E;
+  --pos:#1E8A6E; --neu:#A9B8CB; --mix:#E0A21B; --neg:#C2512F; --tox:#16233A;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:'Nunito Sans',system-ui,-apple-system,'Segoe UI',sans-serif}
+a{color:var(--blue)} a:hover{color:var(--blue-dark)}
+button{font:inherit}
+button:focus-visible,a:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+header{background:var(--head);border-bottom:1px solid var(--head-line)}
+.wrap{max-width:1240px;margin:0 auto;padding:0 24px}
+.hdr{display:flex;flex-wrap:wrap;gap:20px;align-items:flex-end;justify-content:space-between;padding:28px 0 24px}
+.pill{font-size:12px;font-weight:700;padding:4px 10px;border-radius:999px;display:inline-block}
+h1{margin:6px 0 4px;font-size:30px;font-weight:800}
+.sub{margin:0;font-size:15px;color:var(--ink3);max-width:640px;line-height:1.5}
+.meta{font-size:13px;color:var(--ink2);text-align:right}
+.meta.stale{color:#9A3B1C;font-weight:700}
+.btn{font-size:14px;font-weight:700;color:#fff;background:var(--blue);border:0;border-radius:8px;padding:0 18px;min-height:44px;cursor:pointer;display:inline-flex;align-items:center;gap:8px}
+.btn:hover{background:var(--blue-dark)} .btn:disabled{opacity:.6;cursor:default}
+.toast{font-size:13px;color:#146B53;background:#E2F4EE;padding:8px 12px;border-radius:8px}
+.toast.err{color:#9A3B1C;background:#FCEBE4}
+main{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,560px),1fr));gap:24px;align-items:start;padding:24px 0 48px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;display:flex;flex-direction:column;min-width:0;box-shadow:0 1px 3px rgba(31,91,184,.12)}
+.ch{padding:20px 20px 12px;display:flex;gap:14px;align-items:flex-start}
+.av{width:48px;height:48px;flex:none;border-radius:50%;background:var(--tag);color:var(--blue);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px}
+.ch h2{margin:0;font-size:19px;font-weight:700}
+.role{font-size:14px;color:var(--ink2)}
+.new{font-size:12px;font-weight:700;color:#fff;background:var(--blue);padding:2px 8px;border-radius:999px}
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:0 20px 10px}
+.stat{background:var(--soft);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:2px}
+.stat span:first-child{font-size:12px;color:var(--ink2)} .stat span:last-child{font-size:18px;font-weight:700}
+.reacts{padding:0 20px 14px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.chip{display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:3px 10px 3px 7px;border-radius:999px;background:var(--cbg);color:var(--ink)}
+.mini{display:inline-flex;align-items:center;gap:4px;font-size:12px;color:var(--ink3)}
+.rg{display:inline-flex;align-items:center;justify-content:center;font-size:15px;line-height:1;flex:none;font-family:'Segoe UI Emoji','Apple Color Emoji','Noto Color Emoji',sans-serif}
+.tabs{display:flex;border-bottom:1px solid var(--line);padding:0 12px;overflow-x:auto}
+.tab{font-size:14px;font-weight:600;padding:0 12px;min-height:44px;border:0;background:none;color:var(--ink2);border-bottom:2px solid transparent;margin-bottom:-1px;cursor:pointer;white-space:nowrap}
+.tab.on{color:var(--blue);border-bottom-color:var(--blue);font-weight:700}
+.body{padding:18px 20px 20px}
+.verdict{font-size:15px;font-weight:800;padding:6px 12px;border-radius:8px;display:inline-block}
+.v-pos{background:#E2F4EE;color:#146B53} .v-neg{background:#FCEBE4;color:#9A3B1C} .v-mix{background:#FFF4D6;color:#7A5200} .v-none{background:var(--soft);color:var(--ink3)}
+.mood{font-size:13px;font-weight:700;padding:5px 10px;border-radius:8px}
+.bar{display:flex;height:12px;border-radius:6px;overflow:hidden;background:var(--track);margin:14px 0}
+.legend{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;font-size:13px}
+.legend div{display:flex;flex-direction:column;gap:2px} .legend b{font-size:18px}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px}
+.lab{color:var(--ink2);display:flex;align-items:center}
+.summary{margin:14px 0 6px;font-size:15px;line-height:1.55}
+.small{font-size:12px;color:var(--ink2)}
+.strip{display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:var(--cbg);border-radius:10px;padding:10px 12px;margin:12px 0 8px;font-size:13px}
+.link{font-size:13px;font-weight:700;color:var(--blue);background:none;border:0;cursor:pointer;min-height:32px;padding:0}
+.plist{display:flex;flex-direction:column;gap:8px}
+.prow{text-align:left;display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:#fff;cursor:pointer;color:inherit;width:100%;min-height:44px}
+.prow:hover{background:var(--cbg)}
+.prow .t{font-size:14px;line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.hotb{font-size:11px;font-weight:700;color:#7A5200;background:#FFF4D6;padding:2px 7px;border-radius:999px}
+.clist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.cm{background:var(--cbg);border-radius:10px;padding:12px 14px;display:flex;gap:12px}
+.rank{flex:none;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff}
+.anon{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12px;color:var(--ink2);margin-bottom:6px}
+.anon i{width:20px;height:20px;border-radius:50%;background:var(--line);display:inline-block}
+.toxtag{font-size:11px;font-weight:700;color:#fff;background:var(--tox);padding:1px 7px;border-radius:999px}
+.ctext{margin:0 0 6px;font-size:14px;line-height:1.5;white-space:pre-wrap;word-break:break-word}
+.masked{filter:blur(4px);background:var(--line);border-radius:3px;padding:0 2px;user-select:none}
+.hidden{position:relative;min-height:44px;margin-bottom:6px}
+.hidden p{filter:blur(5px);user-select:none;margin:0;font-size:14px}
+.reveal{position:absolute;inset:0;margin:auto;width:max-content;height:36px;font-size:13px;font-weight:700;background:#fff;color:var(--ink);border:1px solid #A9C0DE;border-radius:8px;padding:0 12px;cursor:pointer}
+.rbtn{font-size:12px;font-weight:700;border:0;border-radius:999px;padding:4px 10px;cursor:pointer;min-height:28px;color:var(--blue);background:var(--tag)}
+.rbtn.hot{color:#7A5200;background:#FFF4D6}
+.thread{margin-top:8px;display:flex;flex-direction:column;gap:8px;padding:10px 12px;background:#fff;border-radius:8px}
+.reply{display:flex;flex-direction:column;gap:3px;padding-top:6px;border-top:1px solid var(--soft)}
+.rtags{display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:11px}
+.rel{font-weight:700;padding:1px 7px;border-radius:999px}
+.rel-agree{background:#E2F4EE;color:#146B53} .rel-disagree{background:#FFF4D6;color:#7A5200} .rel-neutral{background:var(--soft);color:var(--ink3)}
+.rtext{font-size:13px;line-height:1.45;white-space:pre-wrap;word-break:break-word}
+.rtext.author{color:var(--blue-dark);font-weight:600}
+.deb{border:1px solid var(--line);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.dbadge{font-size:12px;font-weight:800;padding:3px 9px;border-radius:999px}
+.db-hot{background:#FFF4D6;color:#7A5200} .db-bad{background:var(--tox);color:#fff} .db-ok{background:#E2F4EE;color:#146B53} .db-mix{background:var(--soft);color:var(--ink3)}
+.authb{font-size:11px;font-weight:700;color:var(--blue);background:var(--tag);padding:2px 7px;border-radius:999px}
+.dbar{display:flex;height:8px;border-radius:4px;overflow:hidden;background:var(--track)}
+.empty{font-size:14px;color:var(--ink2);padding:8px 0}
+.offline{grid-column:1/-1;background:#FCEBE4;color:#9A3B1C;border-radius:12px;padding:16px 18px;font-size:15px;line-height:1.5}
+.ov{position:fixed;inset:0;background:rgba(22,35,58,.55);display:flex;align-items:flex-start;justify-content:center;padding:40px 16px;overflow-y:auto;z-index:10}
+.dlg{background:#fff;border-radius:14px;width:100%;max-width:700px;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+.dh{padding:20px 20px 0;display:flex;gap:12px;align-items:flex-start}
+.x{flex:none;width:44px;height:44px;border:0;background:var(--bg);border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center}
+@media (max-width:600px){ .hdr{align-items:flex-start} .meta{text-align:left} .legend{grid-template-columns:repeat(2,minmax(0,1fr))} .ov{padding:0} .dlg{border-radius:0;min-height:100vh} }
+</style>
+</head>
+<body>
+<header><div class="wrap hdr">
+  <div style="flex:1 1 420px;min-width:0">
+    <span class="pill" style="color:var(--blue);background:#fff">Figyelő · Helyi rovat</span>
+    <h1>Kerületi Facebook-figyelő</h1>
+    <p class="sub">Hogyan alakulnak a kerület eseményei: ki mit posztol, és hogyan reagálnak rá a kommentelők.</p>
+  </div>
+  <div style="display:flex;flex-direction:column;align-items:flex-end;gap:10px">
+    <div id="meta" class="meta">Betöltés…</div>
+  </div>
+</div></header>
+<div class="wrap"><main id="cards"></main></div>
+<div id="modal"></div>
+
+<script src="../assets/config.js"></script>
+<script>
+const API = ((window.FIGYELO && window.FIGYELO.FB_API) || '').replace(/\/+$/, '');
+const S = { data: null, tabs: {}, revealed: new Set(), open: new Set(), post: null, mtab: 0 };
+const TZ = 'Europe/Budapest';
+const R = { like:['Tetszik','👍'], love:['Imádom','❤️'], care:['Törődöm','🥰'], haha:['Haha','😆'],
+            wow:['Hűha','😮'], sad:['Szomorú','😢'], angry:['Dühös','😡'] };
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmtN = n => n == null ? '–' : String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+const dayKey = d => d.toLocaleDateString('sv-SE', {timeZone: TZ});
+function fmtDate(iso) {
+  if (!iso) return '–';
+  const d = new Date(iso), now = new Date();
+  const t = d.toLocaleTimeString('hu-HU', {timeZone: TZ, hour: '2-digit', minute: '2-digit'});
+  if (dayKey(d) === dayKey(now)) return 'ma ' + t;
+  if (dayKey(d) === dayKey(new Date(now - 864e5))) return 'tegnap ' + t;
+  return d.toLocaleDateString('hu-HU', {timeZone: TZ, month: 'short', day: 'numeric'});
+}
+function vClass(v) { return /támogató/.test(v) ? 'v-pos' : /kritikus/.test(v) ? 'v-neg' : v === 'Megosztott' ? 'v-mix' : 'v-none'; }
+function vDot(v) { return /támogató/.test(v) ? 'var(--pos)' : /kritikus/.test(v) ? 'var(--neg)' : v === 'Megosztott' ? 'var(--mix)' : 'var(--neu)'; }
+function moodStyle(m) { return m === 'ellenséges' ? 'background:#FCEBE4;color:#9A3B1C' : m === 'feszült' ? 'background:#FFF4D6;color:#7A5200' : 'background:#E2F4EE;color:#146B53'; }
+function initials(n) { return n.replace(/^Dr\.?\s+/, '').split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase(); }
+function chips(list, mini) {
+  return (list || []).map(r => { const m = R[r.type] || [r.type, '•'];
+    return `<span class="${mini ? 'mini' : 'chip'}" title="${m[0]}: ${fmtN(r.n)}"><span class="rg" role="img" aria-label="${m[0]}">${m[1]}</span>${mini ? fmtN(r.n) : '<b>' + fmtN(r.n) + '</b>'}</span>`; }).join('');
+}
+function dClass(l) { return l === 'Elfajult vita' ? 'db-bad' : l === 'Vita' ? 'db-hot' : l === 'Egyetértő' ? 'db-ok' : 'db-mix'; }
+
+function toneHTML(t, extra) {
+  if (!t.n) return `<span class="verdict v-none">${esc(t.verdict || 'Nincs adat')}</span><p class="summary">${esc(t.summary || 'Még nincs elemzett komment ebben az időszakban.')}</p>`;
+  return `<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span class="verdict ${vClass(t.verdict)}">${esc(t.verdict)}</span>
+    ${t.mood ? `<span class="mood" style="${moodStyle(t.mood)}">Hangnem: ${esc(t.mood)}</span>` : ''}<span class="small">${esc(t.delta || '')}</span></div>
+  <div class="bar" role="img" aria-label="Támogató ${t.sup}%, semleges ${t.neu}%, kritikus ${t.crit}%">
+    <div style="width:${t.sup}%;background:var(--pos)"></div><div style="width:${t.neu}%;background:var(--neu)"></div><div style="width:${t.crit}%;background:var(--neg)"></div></div>
+  <div class="legend">
+    <div><span class="lab"><i class="dot" style="background:var(--pos)"></i>Támogató</span><b>${t.sup}%</b></div>
+    <div><span class="lab"><i class="dot" style="background:var(--neu)"></i>Semleges</span><b>${t.neu}%</b></div>
+    <div><span class="lab"><i class="dot" style="background:var(--neg)"></i>Kritikus</span><b>${t.crit}%</b></div>
+    <div><span class="lab"><i class="dot" style="background:var(--tox);border-radius:2px"></i>Sértő</span><b>${t.toxic}%</b></div>
+  </div>
+  <p class="summary">${esc(t.summary)}</p>${extra || ''}<div class="small">${fmtN(t.n)} első szintű komment alapján${t.posts ? ', ' + t.posts + ' posztból' : ''}. A válaszok a Viták fülön.</div>`;
+}
+
+function textHTML(text) {
+  return String(text || '').split(/(\[\[.*?\]\])/).filter(Boolean).map(p =>
+    p.startsWith('[[') ? `<span class="masked" title="Elrejtett név">${esc(p.slice(2, -2))}</span>` : esc(p)).join('');
+}
+function threadHTML(c) {
+  const th = c.thread || {}, reps = th.replies || [], d = th.debate;
+  if (!reps.length) return '';
+  const isOpen = S.open.has(c.id);
+  const label = (isOpen ? '▾ ' : '▸ ') + reps.length + ' válasz' + (d ? ' · ' + d.label : '') + (d && d.author ? ' · szerző is' : '');
+  let html = `<button class="rbtn ${d && (d.label === 'Vita' || d.label === 'Elfajult vita') ? 'hot' : ''}" data-thread="${esc(c.id)}">${esc(label)}</button>`;
+  if (isOpen) {
+    const head = d ? `Egyetért a kommenttel: ${d.agree}% · Vitatkozik: ${d.dis}% · Sértő válasz: ${d.toxic}${d.author ? ' · A szerző is válaszolt.' : ''}` : 'Kevés válasz, vitajelző nincs.';
+    html += `<div class="thread"><div class="small" style="color:var(--ink3)">${esc(head)}${th.summary ? '<br>' + esc(th.summary) : ''}</div>` +
+      reps.map((r, i) => {
+        const rid = c.id + ':' + i, hide = r.toxic && !S.revealed.has(rid);
+        const rel = r.rel === 'agree' ? 'egyetért' : r.rel === 'disagree' ? 'vitatkozik' : 'semleges';
+        const st = r.stance === 'supportive' ? ['támogatja a szerzőt', 'var(--pos)'] : r.stance === 'critical' ? ['kritikus a szerzővel', 'var(--neg)'] : ['semleges a szerzővel', 'var(--ink2)'];
+        const body = hide ? `<div class="hidden"><p aria-hidden="true">${esc(String(r.text).replace(/\[\[|\]\]/g, ''))}</p><button class="reveal" data-reveal="${esc(rid)}">Sértő tartalom – megjelenítés</button></div>`
+                          : `<span class="rtext ${r.is_author ? 'author' : ''}">${textHTML(r.text)}</span>`;
+        return `<div class="reply"><div class="rtags"><b style="color:var(--ink2)">${r.is_author ? 'A poszt szerzője' : 'Névtelen válaszoló'}</b>
+          ${r.analyzed ? `<span class="rel rel-${r.rel || 'neutral'}">${rel}</span><b style="color:${st[1]}">${st[0]}</b>` : '<span class="small">még nincs elemezve</span>'}
+          ${r.toxic ? '<span class="toxtag">Sértő</span>' : ''}</div>${body}</div>`;
+      }).join('') + '</div>';
+  }
+  return html;
+}
+function commentsHTML(list, positive, showPost) {
+  if (!list.length) return `<div class="empty">Ebben az időszakban nincs ${positive ? 'támogató' : 'kritikus'} komment.</div>`;
+  return `<ol class="clist">${list.map((c, i) => {
+    const hide = c.toxic && !S.revealed.has(c.id);
+    const body = hide
+      ? `<div class="hidden"><p aria-hidden="true">${esc(String(c.text).replace(/\[\[|\]\]/g, ''))}</p><button class="reveal" data-reveal="${esc(c.id)}">Sértő tartalom – megjelenítés</button></div>`
+      : `<p class="ctext">${textHTML(c.text)}</p>`;
+    const post = showPost && c.post_title ? ` · <a href="#" data-open="${esc(c.post_id)}">„${esc(c.post_title)}…”</a>` : '';
+    return `<li class="cm"><span class="rank" style="background:${positive ? 'var(--pos)' : 'var(--neg)'}">${i + 1}</span>
+      <div style="flex:1;min-width:0"><div class="anon"><i aria-hidden="true"></i>Névtelen kommentelő${c.toxic ? '<span class="toxtag">Sértő</span>' : ''}</div>
+      ${body}<div class="small" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><span>${fmtN(c.likes)} kedvelés · ${fmtDate(c.post_date)}${post}</span>${threadHTML(c)}</div></div></li>`;
+  }).join('')}</ol>`;
+}
+function debatesHTML(list) {
+  if (!list.length) return '<div class="empty">Ebben az időszakban nem volt legalább 3 válaszos szál.</div>';
+  return '<div style="display:flex;flex-direction:column;gap:10px"><div class="small">A legnagyobb viták a kommentek alatti válaszokból.</div>' + list.map(d => `
+    <div class="deb"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <span class="dbadge ${dClass(d.label)}">${esc(d.label)}</span><span class="small">${d.n} válasz · „${esc(d.post_title)}…”</span>
+      ${d.author ? '<span class="authb">A szerző is beszállt</span>' : ''}</div>
+      <div style="font-size:14px;line-height:1.45"><b>Kiinduló komment:</b> „${textHTML(d.root)}”</div>
+      <div class="dbar" role="img" aria-label="Egyetért ${d.agree}%, vitatkozik ${d.dis}%"><div style="width:${d.agree}%;background:var(--pos)"></div><div style="width:${d.dis}%;background:var(--mix)"></div></div>
+      <div class="small">Egyetért: ${d.agree}% · Vitatkozik: ${d.dis}% · Sértő válasz: ${d.toxic}</div>
+      ${d.summary ? `<div style="font-size:13px;color:var(--ink3)">${esc(d.summary)}</div>` : ''}
+      <button class="link" style="align-self:flex-start" data-open="${esc(d.post_id)}">A poszt megnyitása →</button></div>`).join('') + '</div>';
+}
+
+function cardHTML(a) {
+  const tab = S.tabs[a.id] || 0, ds = a.debate_stats || {threads: 0, hot: 0, author: 0};
+  const labels = ['Hangulat', `Posztok (${S.data.window_days} nap)`, 'Top 5 pozitív', 'Top 5 negatív', `Viták (${ds.threads})`];
+  let body;
+  if (tab === 0) body = toneHTML(a.tone, `<div class="strip"><b>Viták a válaszokban:</b><span style="color:var(--ink3)">${ds.threads} szál · ${ds.hot} vita · ${ds.author} szálban a szerző is válaszolt</span>
+      <button class="link" style="margin-left:auto" data-tab="4" data-acc="${esc(a.id)}">Megnézem →</button></div>`);
+  else if (tab === 1) body = a.posts.length ? `<div class="plist">${a.posts.map(p => `
+      <button class="prow" data-open="${esc(p.id)}">
+        <span style="width:10px;height:10px;border-radius:50%;margin-top:4px;flex:none;background:${vDot(p.verdict)}" aria-hidden="true"></span>
+        <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:5px">
+          <span class="small">${fmtDate(p.date)} · ${esc(p.verdict)}</span>
+          <span class="t">${esc(p.text || '(kép vagy videó szöveg nélkül)')}</span>
+          <span class="small" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">${chips(p.reactions_top, true)}<span>· ${fmtN(p.comments)} komment</span>${p.hot_debates ? `<span class="hotb">${p.hot_debates} vita</span>` : ''}</span></span>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#475871" stroke-width="2" stroke-linecap="round" aria-hidden="true" style="flex:none;margin-top:12px"><path d="M9 6l6 6-6 6"/></svg>
+      </button>`).join('')}<div class="small">Kattints egy posztra a részletekért.</div></div>`
+    : `<div class="empty">Az elmúlt ${S.data.window_days} napban nem volt poszt.</div>`;
+  else if (tab === 4) body = debatesHTML(a.debates || []);
+  else body = commentsHTML(tab === 2 ? a.top_pos : a.top_neg, tab === 2, true);
+  return `<article class="card">
+    <div class="ch"><div class="av" aria-hidden="true">${esc(initials(a.name))}</div>
+      <div style="flex:1;min-width:0"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><h2>${esc(a.name)}</h2>${a.has_new ? '<span class="new">Új poszt</span>' : ''}</div>
+      <div class="role">${esc(a.role)} · <a href="${esc(a.url)}" target="_blank" rel="noopener">Facebook-oldal</a></div></div></div>
+    <div class="stats"><div class="stat"><span>Posztok (${S.data.window_days} nap)</span><span>${a.post_count}</span></div>
+      <div class="stat"><span>Legutóbbi poszt</span><span>${fmtDate(a.last_post)}</span></div>
+      <div class="stat"><span>Reakciók összesen</span><span>${fmtN(a.reactions_total)}</span></div></div>
+    ${a.reactions && a.reactions.length ? `<div class="reacts"><span class="small">Leggyakoribb reakciók:</span>${chips(a.reactions)}</div>` : ''}
+    <div class="tabs" role="tablist">${labels.map((l, i) => `<button role="tab" aria-selected="${i === tab}" class="tab ${i === tab ? 'on' : ''}" data-acc="${esc(a.id)}" data-tab="${i}">${l}</button>`).join('')}</div>
+    <div class="body">${body}</div></article>`;
+}
+
+function modalHTML() {
+  const p = S.post;
+  if (!p) return '';
+  const labels = ['Hangulat', 'Top 5 pozitív', 'Top 5 negatív', `Viták (${(p.debates || []).length})`];
+  const body = S.mtab === 0 ? toneHTML(p.tone, '') : S.mtab === 3 ? debatesHTML(p.debates || []).replace(/<button class="link"[^>]*>A poszt megnyitása →<\/button>/g, '')
+             : commentsHTML(S.mtab === 1 ? p.top_pos : p.top_neg, S.mtab === 1, false);
+  return `<div class="ov" data-close="1"><div class="dlg" role="dialog" aria-modal="true" aria-label="Poszt részletei">
+    <div class="dh"><div style="flex:1;min-width:0">
+      <div class="small" style="font-size:13px">${esc(p.name)} · ${esc(p.role)} · ${fmtDate(p.date)}</div>
+      <p style="margin:6px 0;font-size:16px;line-height:1.55;white-space:pre-wrap">${esc(p.text)}</p>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">${chips(p.reactions_top)}<span class="small" style="font-size:13px">· ${fmtN(p.reactions)} reakció · ${fmtN(p.comments)} komment ${p.url ? `· <a href="${esc(p.url)}" target="_blank" rel="noopener">Megnyitás a Facebookon</a>` : ''}</span></div></div>
+      <button class="x" data-close="1" aria-label="Bezárás"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#16233A" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <div class="tabs" role="tablist" style="margin-top:14px">${labels.map((l, i) => `<button role="tab" class="tab ${i === S.mtab ? 'on' : ''}" data-mtab="${i}">${l}</button>`).join('')}</div>
+    <div class="body">${body}</div></div></div>`;
+}
+
+function render() {
+  const d = S.data;
+  if (!d) return;
+  const last = d.last_ingest ? new Date(d.last_ingest) : null;
+  const stale = !last || (Date.now() - last) > 3 * 864e5;
+  const meta = document.getElementById('meta');
+  meta.className = 'meta' + (stale ? ' stale' : '');
+  meta.textContent = `Időszak: elmúlt ${d.window_days} nap · Utolsó frissítés: ${last ? fmtDate(d.last_ingest) : 'még nem volt'}` + (stale && last ? ' (régi adat)' : '');
+  document.getElementById('cards').innerHTML = d.accounts.map(cardHTML).join('');
+  document.getElementById('modal').innerHTML = modalHTML();
+}
+
+function offline(msg) {
+  document.getElementById('meta').textContent = 'Az adatforrás most nem érhető el.';
+  document.getElementById('cards').innerHTML = `<div class="offline"><b>Az adatforrás most nem érhető el.</b><br>${esc(msg)} Próbáld újra néhány perc múlva.</div>`;
+}
+async function getJSON(path) {
+  const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), 20000);
+  try {
+    const r = await fetch(API + path, {signal: ctl.signal});
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return await r.json();
+  } finally { clearTimeout(timer); }
+}
+async function load() {
+  if (!API || /CSERELD-KI/.test(API)) { offline('A Pi címe még nincs beállítva (assets/config.js).'); return; }
+  try { S.data = await getJSON('/api/dashboard'); render(); }
+  catch (e) { offline('A Raspberry Pi nem válaszolt (' + (e.name === 'AbortError' ? 'időtúllépés' : e.message) + ').'); }
+}
+async function openPost(id) {
+  try { S.post = await getJSON('/api/post/' + encodeURIComponent(id)); S.mtab = 0; render(); }
+  catch (e) { alertLine('A poszt részletei most nem tölthetők be.'); }
+}
+function alertLine(msg) { const m = document.getElementById('meta'); m.textContent = msg; m.className = 'meta stale'; }
+
+document.addEventListener('click', e => {
+  const el = e.target.closest('[data-tab],[data-open],[data-reveal],[data-mtab],[data-close],[data-thread]');
+  if (!el) return;
+  if (el.dataset.close && e.target.closest('.dlg') && !e.target.closest('.x')) return;
+  e.preventDefault();
+  if (el.dataset.tab) { S.tabs[el.dataset.acc] = +el.dataset.tab; render(); }
+  else if (el.dataset.open) openPost(el.dataset.open);
+  else if (el.dataset.reveal) { S.revealed.add(el.dataset.reveal); render(); }
+  else if (el.dataset.thread) { S.open.has(el.dataset.thread) ? S.open.delete(el.dataset.thread) : S.open.add(el.dataset.thread); render(); }
+  else if (el.dataset.mtab) { S.mtab = +el.dataset.mtab; render(); }
+  else if (el.dataset.close) { S.post = null; render(); }
+});
+load();
+</script>
+<script src="../assets/vissza.js"></script>
+</body>
+</html>
