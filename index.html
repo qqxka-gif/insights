@@ -3,13 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Figyelő</title>
-<meta name="description" content="Figyelő – hírfigyelő és kerületi Facebook-figyelő egy helyen.">
+<title>Hírfigyelő – Figyelő</title>
+<meta name="description" content="Hírfigyelő: országimázs-barométer, napi top hírek, országjelentések és trendek – a Figyelő rovata.">
+<script>try{if(localStorage.getItem("figyelo-kiadas")==="nappali")document.documentElement.classList.add("nappali")}catch(e){}</script>
+<script>window.addEventListener("error",function(e){var b=document.getElementById("err");if(b){b.hidden=false;b.textContent="Hiba az oldalon: "+(e.message||"ismeretlen")+". Frissítsd az oldalt (Ctrl+F5), és küldd el ezt az üzenetet."}})</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,400;1,9..144,600&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
-/* Glossy nyitóoldal (kiadványválasztó) – a figyelo-prototipus.html tokenjeivel */
+/* Hírfigyelő – glossy „digitális újság”: teljes képernyős lapok görgetéssel, 3D átmenettel (figyelo-prototipus.html alapján) */
 :root {
   color-scheme: dark;
   --ground: #0A0E14; --ground-2: #141C28; --page-a: #161E2A; --page-b: #0F141C;
@@ -19,13 +21,17 @@
   --halo: rgba(111, 179, 255, 0.10); --sheen: rgba(255, 255, 255, 0.07); --edge: rgba(160, 205, 255, 0.6);
   --shadow: 0 30px 70px rgba(0, 0, 0, 0.62), inset 0 1px 0 rgba(255, 255, 255, 0.08);
   --lift: 0 40px 80px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  --track: rgba(238, 233, 223, 0.10); --dot-off: #4A5260;
   --hir: #7DBBFF; --fb: #F2B35B; --koz: #7FD1A6;
   --glow-hir: rgba(111, 179, 255, 0.28); --glow-fb: rgba(242, 179, 91, 0.24); --glow-koz: rgba(127, 209, 166, 0.22);
-  --panel-a: #1A2230; --panel-b: #0D121A; --panel-fg: #EEE9DF; --panel-muted: #A3A9B4;
+  --panel-a: #1A2230; --panel-b: #0D121A; --panel-fg: #EEE9DF; --panel-muted: #A3A9B4; --panel-grid: rgba(255, 255, 255, 0.08);
+  --c-hir: #6FB3FF; --c-fb: #F2B35B; --c-2: #C9CED6;
+  --pos: #5B9BE0; --neu: #8C929C; --neg: #E8913F;
   --font-display: "Fraunces", Georgia, "Times New Roman", serif;
   --font-body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
   --head-h: 64px; --top: calc(var(--head-h) + env(safe-area-inset-top, 0px));
+  --acc: var(--hir); --chart: var(--c-hir); --aglow: var(--glow-hir);
 }
 html.nappali {
   color-scheme: light;
@@ -36,10 +42,13 @@ html.nappali {
   --halo: rgba(255, 255, 255, 0.55); --sheen: rgba(255, 255, 255, 0.7); --edge: rgba(255, 255, 255, 0.95);
   --shadow: 0 30px 60px rgba(60, 50, 30, 0.28), 0 6px 16px rgba(60, 50, 30, 0.16), inset 0 1px 0 #FFFFFF;
   --lift: 0 36px 70px rgba(60, 50, 30, 0.34), inset 0 1px 0 #FFFFFF;
+  --track: rgba(21, 23, 28, 0.08); --dot-off: #B5AE9F;
   --hir: #1F5C99; --fb: #94531A; --koz: #2E6B4F;
   --glow-hir: rgba(31, 92, 153, 0.18); --glow-fb: rgba(148, 83, 26, 0.16); --glow-koz: rgba(46, 107, 79, 0.16);
+  --pos: #2F6DB5; --neu: #5E6470; --neg: #B5602A;
 }
 [hidden] { display: none !important; }
+html.snap { scroll-snap-type: y proximity; scroll-padding-top: var(--top); }
 body {
   margin: 0; min-height: 100vh;
   background: radial-gradient(1100px 700px at 50% 40%, var(--ground-2) 0%, var(--ground) 72%) fixed;
@@ -47,62 +56,200 @@ body {
   font-family: var(--font-body); font-size: 15px; line-height: 1.5; -webkit-font-smoothing: antialiased;
   transition: background-color 0.4s ease, color 0.4s ease;
 }
-button { font: inherit; color: inherit; }
-a { color: inherit; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 30; background: var(--bar); }
+button, select { font: inherit; color: inherit; }
+a { color: var(--acc); }
 :focus-visible { outline: 2px solid var(--hir); outline-offset: 3px; border-radius: 6px; }
 .mono { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.13em; text-transform: uppercase; }
 .muted { color: var(--muted); }
 
-.top { position: fixed; top: 0; left: 0; right: 0; z-index: 20; padding-top: env(safe-area-inset-top, 0px); background: var(--bar); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border-bottom: 1px solid var(--hair); }
-.top-in { height: var(--head-h); display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 0 max(16px, env(safe-area-inset-right, 0px)) 0 max(16px, env(safe-area-inset-left, 0px)); }
-@media (min-width: 760px) { .top-in { padding: 0 32px; } }
+/* ---------- Fejléc ---------- */
+.top { position: fixed; top: 0; left: 0; right: 0; z-index: 300; padding-top: env(safe-area-inset-top, 0px); background: var(--bar); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border-bottom: 1px solid var(--hair); }
+.top-in { height: var(--head-h); display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+@media (min-width: 760px) { .top-in { padding-left: 32px; padding-right: 32px; } }
 .brand { display: flex; align-items: center; gap: 16px; min-width: 0; }
-.logo { font-family: var(--font-display); font-size: 28px; font-weight: 600; letter-spacing: -0.01em; line-height: 1; text-decoration: none; }
+.logo { font-family: var(--font-display); font-size: 28px; font-weight: 600; letter-spacing: -0.01em; line-height: 1; text-decoration: none; color: var(--text); }
 .edition { white-space: nowrap; color: var(--muted); }
+.sep { width: 1px; height: 26px; background: var(--hair); }
+.menu { position: relative; }
+.menu-btn { display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border-radius: 10px; cursor: pointer; border: 1px solid var(--hair); background: var(--pill); color: var(--hir); font-family: var(--font-display); font-style: italic; font-size: 18px; font-weight: 600; }
+.menu-list { position: absolute; top: calc(100% + 8px); left: 0; min-width: 230px; margin: 0; padding: 6px; list-style: none; background: linear-gradient(180deg, var(--page-a), var(--page-b)); border: 1px solid var(--hair); border-radius: 12px; box-shadow: var(--shadow); }
+.menu-list a, .menu-list span.dis { width: 100%; box-sizing: border-box; min-height: 44px; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 12px; border-radius: 8px; text-decoration: none; color: var(--text); font-size: 14px; }
+.menu-list a:hover { background: var(--pill); }
+.menu-list span.dis { opacity: 0.55; }
+.menu-list .dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.menu-list .lbl { display: flex; align-items: center; gap: 10px; }
 .toggle { display: flex; padding: 4px; gap: 4px; border-radius: 999px; background: var(--pill); border: 1px solid var(--hair); flex-shrink: 0; }
 .toggle button { display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 14px; border: 0; border-radius: 999px; cursor: pointer; background: transparent; color: var(--muted); font-size: 13px; font-weight: 500; }
 .toggle button[aria-pressed="true"] { background: var(--pill-on); color: var(--pill-on-fg); box-shadow: inset 0 1px 0 rgba(255,255,255,0.15), 0 0 12px var(--glow-hir); }
 .toggle svg { width: 15px; height: 15px; }
-@media (max-width: 640px) { .edition { display: none; } .toggle .t-lbl { display: none; } .toggle button { width: 36px; padding: 0; justify-content: center; } .logo { font-size: 23px; } }
+@media (max-width: 640px) { .edition, .sep { display: none; } .toggle .t-lbl { display: none; } .toggle button { width: 36px; padding: 0; justify-content: center; } .logo { font-size: 23px; } .menu-btn { font-size: 16px; padding: 0 10px; } }
 
+/* ---------- Lapok ---------- */
 .waves { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; display: block; }
 .halo { position: fixed; left: 50%; top: 55%; width: 900px; height: 560px; transform: translate(-50%, -50%); border-radius: 50%; background: radial-gradient(closest-side, var(--halo), transparent); pointer-events: none; }
-main { position: relative; z-index: 1; padding-top: var(--top); min-height: 100vh; min-height: 100svh; box-sizing: border-box; display: flex; }
-.v-in { flex: 1; width: 100%; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 28px; padding-block: 36px 40px; }
-.v-head { text-align: center; display: flex; flex-direction: column; gap: 6px; padding: 0 16px; }
-.v-head h1 { margin: 0; font-family: var(--font-display); font-size: clamp(30px, 4vw, 44px); font-weight: 600; letter-spacing: -0.01em; line-height: 1.05; }
-.covers { display: flex; gap: 32px; justify-content: center; max-width: 100%; box-sizing: border-box; padding: 18px 16px; }
-.cover {
-  position: relative; flex-shrink: 0; width: min(300px, 78vw); min-height: 420px; box-sizing: border-box; padding: 24px 24px 20px;
-  display: flex; flex-direction: column; gap: 12px; text-decoration: none; color: var(--text); border-radius: 14px; overflow: hidden;
-  background: linear-gradient(180deg, var(--page-a), var(--page-b)); border: 1px solid var(--hair); box-shadow: var(--shadow);
-  transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.45s ease, border-color 0.45s ease;
-  --mx: 50%; --my: 20%;
-}
-.cover::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 1px; background: linear-gradient(90deg, transparent, var(--edge), transparent); opacity: 0.5; transition: opacity 0.4s; }
-.cover::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(420px 260px at var(--mx) var(--my), var(--sheen), transparent 60%); opacity: 0.6; transition: opacity 0.4s; }
-a.cover:hover, a.cover:focus-visible { transform: translateY(-12px) scale(1.03); border-color: var(--edge); box-shadow: var(--lift), 0 0 70px var(--cglow); }
-a.cover:hover::before, a.cover:focus-visible::before { opacity: 1; }
-a.cover:hover::after { opacity: 1; }
-div.cover { opacity: 0.6; }
-.c-top { display: flex; justify-content: space-between; color: var(--muted); font-size: 10px; }
-.c-title { font-family: var(--font-display); font-style: italic; font-size: 34px; font-weight: 600; line-height: 1; color: var(--cacc); padding-bottom: 10px; border-bottom: 3px solid var(--rule); }
-.c-kick { color: var(--cacc); font-size: 10px; }
-.c-head { font-family: var(--font-display); font-size: 20px; line-height: 1.18; font-weight: 600; text-wrap: balance; }
-.c-panel { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; padding: 14px; border-radius: 10px; background: linear-gradient(160deg, var(--panel-a), var(--panel-b)); border: 1px solid rgba(255,255,255,0.07); color: var(--panel-fg); }
-.c-num { font-family: var(--font-display); font-size: 28px; font-weight: 600; line-height: 1; }
-.c-metric { font-size: 11px; color: var(--panel-muted); }
-.c-foot { margin-top: auto; display: flex; justify-content: space-between; align-items: center; font-size: 13px; font-weight: 500; }
-.c-cta { color: var(--cacc); }
-.v-foot { display: flex; flex-wrap: wrap; justify-content: center; gap: 14px; font-size: 13px; padding: 0 16px; }
-.swipe-hint { display: none; }
-@media (max-width: 1040px) {
-  .covers { justify-content: flex-start; overflow-x: auto; scroll-snap-type: x mandatory; gap: 16px; scrollbar-width: none; }
-  .covers::-webkit-scrollbar { display: none; }
-  .cover { scroll-snap-align: center; }
-  .swipe-hint { display: block; }
-  a.cover:hover, a.cover:focus-visible { transform: translateY(-6px); }
-}
+main { display: block; position: relative; z-index: 1; isolation: isolate; padding-top: var(--top); }
+.scroller { position: relative; overflow-x: clip; padding-bottom: 80px; }
+.slot { min-height: calc(100vh - var(--top)); min-height: calc(100svh - var(--top)); box-sizing: border-box; scroll-snap-align: start; display: flex; align-items: center; justify-content: center; padding-block: 22px; padding-left: max(12px, env(safe-area-inset-left, 0px)); padding-right: max(12px, env(safe-area-inset-right, 0px)); position: relative; }
+@media (min-width: 1100px) { .slot { padding-left: 200px; padding-right: 200px; } }
+@media (max-width: 759px) { .slot { padding-top: 30px; } }
+.lap { position: relative; width: min(900px, 100%); box-sizing: border-box; padding: 26px 32px 28px; border-radius: 16px; display: flex; flex-direction: column; gap: 14px; background: linear-gradient(180deg, var(--page-a), var(--page-b)); border: 1px solid var(--hair); box-shadow: var(--shadow), 0 0 90px var(--aglow); will-change: transform, opacity; transform-origin: 50% 0%; }
+@media (max-width: 640px) { .lap { padding: 20px 16px 22px; } }
+.lap::before { content: ""; position: absolute; inset: 0; pointer-events: none; border-radius: inherit; background: linear-gradient(165deg, var(--sheen) 0%, transparent 32%); }
+.lap::after { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 1px; pointer-events: none; background: linear-gradient(90deg, transparent, var(--edge), transparent); }
+.lap > *, .lap-body > * { position: relative; }
+.lap-body { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.lap-top { display: flex; justify-content: space-between; gap: 12px; color: var(--muted); font-size: 10px; }
+.lap-title { margin: 0; font-family: var(--font-display); font-size: clamp(30px, 4.2vw, 44px); font-weight: 600; line-height: 1.02; letter-spacing: -0.01em; padding-bottom: 10px; border-bottom: 3px solid var(--rule); text-wrap: balance; }
+.lap-title.rovatnev { font-style: italic; color: var(--acc); font-size: clamp(38px, 5.4vw, 56px); }
+.kick { color: var(--acc); font-size: 10px; }
+.lead { margin: 0; font-family: var(--font-display); font-size: clamp(21px, 2.4vw, 26px); line-height: 1.14; font-weight: 600; text-wrap: balance; }
+.dek { margin: 0; color: var(--muted); font-size: 14px; max-width: 62ch; }
+.grid2 { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 26px; }
+.grid2 > * { min-width: 0; }
+@media (max-width: 759px) { .grid2 { grid-template-columns: minmax(0, 1fr); } }
+.col { display: flex; flex-direction: column; gap: 10px; }
+.side { padding-left: 22px; border-left: 1px solid var(--hair); }
+@media (max-width: 759px) { .side { padding-left: 0; border-left: 0; padding-top: 14px; border-top: 1px solid var(--hair); } }
+.h3 { margin: 0; font-family: var(--font-display); font-size: 19px; font-weight: 600; }
+
+.panel { position: relative; border-radius: 12px; padding: 14px 16px 12px; background: linear-gradient(160deg, var(--panel-a), var(--panel-b)); border: 1px solid rgba(255,255,255,0.07); box-shadow: inset 0 1px 0 rgba(255,255,255,0.08); color: var(--panel-fg); overflow: hidden; }
+.panel a { color: #9FCBFF; }
+.panel-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 8px; flex-wrap: wrap; }
+.panel-head b { font-size: 13px; font-weight: 600; }
+.panel .src { font-family: var(--font-mono); font-size: 10px; color: var(--panel-muted); }
+.panel svg { display: block; width: 100%; height: auto; }
+.legend { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 12px; color: var(--panel-muted); margin-top: 8px; }
+.legend span { display: flex; align-items: center; gap: 7px; }
+.legend i { width: 14px; height: 3px; border-radius: 2px; display: block; }
+
+.toc { display: flex; flex-direction: column; }
+.toc button { display: grid; grid-template-columns: 28px minmax(0, 1fr) 14px; align-items: center; gap: 8px; min-height: 42px; padding: 0; border: 0; border-bottom: 1px solid var(--hair); background: none; cursor: pointer; text-align: left; font-size: 13.5px; }
+.toc button:hover .t-name { color: var(--acc); }
+.toc .n { font-family: var(--font-display); font-size: 18px; font-weight: 600; color: var(--acc); }
+.toc svg { width: 12px; height: 12px; }
+.note { font-size: 12px; color: var(--muted); margin: 0; }
+.snap-note { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+
+.gauges { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+@media (max-width: 640px) { .gauges { grid-template-columns: minmax(0, 1fr); } }
+.gauge { display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; }
+.gauge h3 { margin: 0; align-self: stretch; text-align: left; font-family: var(--font-display); font-size: 17px; font-weight: 600; color: var(--panel-fg); }
+.gauge svg { width: min(240px, 100%); height: auto; }
+.gauge .gv { font-family: var(--font-display); font-size: 44px; font-weight: 600; line-height: 1; margin-top: 2px; }
+.gauge .gv small { font-family: var(--font-body); font-size: 13px; color: var(--panel-muted); font-weight: 400; }
+.minis { display: grid; grid-template-columns: repeat(auto-fit, minmax(84px, 1fr)); gap: 8px; align-self: stretch; margin-top: 6px; }
+.mini { padding: 8px 10px; border-radius: 9px; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.03); text-align: left; }
+.mini b { display: block; font-family: var(--font-display); font-size: 19px; font-weight: 600; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.mini span { font-size: 11px; color: var(--panel-muted); }
+.gauge p { margin: 4px 0 0; font-size: 12px; color: var(--panel-muted); text-align: left; align-self: stretch; }
+.gauge details { align-self: stretch; text-align: left; font-size: 13px; }
+.gauge summary { cursor: pointer; color: #9FCBFF; font-size: 12px; font-weight: 500; min-height: 28px; display: inline-flex; align-items: center; }
+.glist { max-height: 260px; overflow-y: auto; margin-top: 6px; }
+.glist div { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 10px; padding: 7px 0; border-top: 1px solid rgba(255,255,255,0.08); }
+.glist .m { font-size: 11px; color: var(--panel-muted); }
+
+.chip { display: inline-flex; align-items: center; gap: 4px; padding: 1px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+.chip.neg { color: var(--neg); background: color-mix(in srgb, var(--neg) 14%, transparent); }
+.chip.neu { color: var(--muted); background: var(--pill); }
+.chip.pos { color: var(--pos); background: color-mix(in srgb, var(--pos) 16%, transparent); }
+.panel .chip.neu { color: var(--panel-muted); background: rgba(255,255,255,0.06); }
+.panel .chip.neg { color: #F0A25C; } .panel .chip.pos { color: #7FB4F0; }
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.tabs button { min-height: 36px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--hair); background: var(--pill); color: var(--muted); cursor: pointer; font-size: 13px; font-weight: 500; }
+.tabs button[aria-pressed="true"] { color: var(--text); border-color: var(--acc); box-shadow: 0 0 12px var(--aglow); }
+.tabs button.dim { opacity: 0.6; }
+.tabs .push { margin-left: auto; }
+.news { display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--hair); }
+.news .r { font-family: var(--font-display); font-size: 22px; font-weight: 600; color: var(--acc); line-height: 1.1; }
+.news b { display: block; font-family: var(--font-display); font-size: 17px; font-weight: 600; line-height: 1.22; }
+.news .meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); margin-top: 4px; }
+.news details { margin-top: 6px; font-size: 13px; }
+.news summary { cursor: pointer; color: var(--acc); font-size: 12px; font-weight: 500; min-height: 28px; display: inline-flex; align-items: center; }
+.news ul { margin: 6px 0 0; padding-left: 18px; color: var(--muted); display: flex; flex-direction: column; gap: 4px; }
+.news ul em { font-style: normal; color: var(--text); }
+.src-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.src-chips span { padding: 3px 10px; border-radius: 999px; border: 1px solid var(--hair); font-size: 12px; }
+.src-chips a { text-decoration: none; }
+.bul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; font-size: 14px; }
+.rep-intro { margin: 0; font-size: 15px; line-height: 1.55; max-width: 70ch; }
+.rep-sec { padding-top: 10px; border-top: 1px solid var(--hair); display: flex; flex-direction: column; gap: 4px; }
+.rep-sec b { font-family: var(--font-display); font-size: 17px; font-weight: 600; }
+.rep-sec p { margin: 0; font-size: 14px; color: var(--muted); max-width: 70ch; }
+.rep-sec .from { font-size: 12px; color: var(--muted); font-family: var(--font-mono); letter-spacing: 0.04em; }
+.rep-sec.hu { border-top-color: var(--acc); }
+.tl { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.tl li { display: grid; grid-template-columns: 92px 18px minmax(0, 1fr); gap: 12px; align-items: start; }
+.tl .when { font-family: var(--font-mono); font-size: 11px; color: var(--muted); padding-top: 3px; text-align: right; }
+.tl .pin { position: relative; height: 100%; min-height: 48px; }
+.tl .pin::before { content: ""; position: absolute; left: 8px; top: 0; bottom: 0; width: 2px; background: var(--hair); }
+.tl .pin::after { content: ""; position: absolute; left: 3px; top: 4px; width: 12px; height: 12px; border-radius: 50%; background: var(--acc); box-shadow: 0 0 0 4px var(--aglow); }
+.tl .what { padding-bottom: 14px; font-size: 14px; }
+.tl .what span { display: block; font-size: 12px; color: var(--muted); margin-top: 2px; }
+@media (max-width: 520px) { .tl li { grid-template-columns: 64px 18px minmax(0, 1fr); } }
+.warn { border: 1px dashed var(--muted); border-radius: 10px; padding: 8px 12px; font-size: 13px; color: var(--muted); }
+.kc { border: 1px solid var(--hair); border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 4px; background: var(--pill); }
+.kc b { font-family: var(--font-display); font-size: 17px; font-weight: 600; }
+.kc .m { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 8px; }
+.seg { display: inline-flex; gap: 3px; }
+.seg i { display: block; width: 22px; height: 7px; border-radius: 4px; background: var(--track); }
+.seg i.f { background: var(--acc); }
+.donut-wrap { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 22px; align-items: center; }
+@media (max-width: 640px) { .donut-wrap { grid-template-columns: minmax(0, 1fr); justify-items: center; } }
+.donut-wrap svg { width: 200px; height: 200px; }
+.dl { display: flex; flex-direction: column; gap: 8px; width: 100%; }
+.dl div { display: grid; grid-template-columns: 12px minmax(0, 1fr) auto auto; gap: 10px; align-items: center; font-size: 13px; }
+.dl i { width: 12px; height: 12px; border-radius: 3px; display: block; }
+.dl .n { font-family: var(--font-mono); font-size: 12px; color: var(--panel-muted); font-variant-numeric: tabular-nums; }
+.dl .p { font-family: var(--font-display); font-weight: 600; font-size: 15px; min-width: 48px; text-align: right; font-variant-numeric: tabular-nums; }
+.polls { list-style: none; margin: 0; padding: 0; max-height: 360px; overflow-y: auto; border-top: 1px solid var(--hair); }
+.polls li { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--hair); font-size: 13px; }
+.polls .d { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+.polls span { color: var(--muted); font-size: 12px; }
+.filters { display: flex; flex-wrap: wrap; gap: 8px; }
+.filters label { display: flex; flex-direction: column; gap: 3px; font-size: 11px; color: var(--muted); }
+.filters select { min-height: 38px; padding: 0 10px; border-radius: 9px; border: 1px solid var(--hair); background: var(--page-a); color: var(--text); font-size: 13px; }
+.art { display: flex; flex-direction: column; gap: 3px; padding: 10px 0; border-bottom: 1px solid var(--hair); }
+.art a { font-size: 14px; font-weight: 600; line-height: 1.35; color: var(--text); text-decoration: none; }
+.art a:hover { color: var(--acc); text-decoration: underline; }
+.art .meta { font-size: 12px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.empty { padding: 16px 0; color: var(--muted); font-size: 13px; }
+.panel .empty { color: var(--panel-muted); }
+.vbox { border-radius: 12px; overflow: hidden; border: 1px solid rgba(255,255,255,0.08); }
+.vbox canvas { width: 100%; height: auto; display: block; background: #f2efe6; }
+.vbox iframe { width: 100%; aspect-ratio: 1 / 1; min-height: 470px; border: 0; display: block; background: var(--panel-b); }
+.vctl { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 12px; color: var(--muted); }
+.vctl button { min-height: 34px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--hair); background: var(--pill); cursor: pointer; font-size: 13px; }
+.method { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 26px; }
+@media (max-width: 640px) { .method { grid-template-columns: minmax(0, 1fr); } }
+.method div { padding-top: 10px; border-top: 1px solid var(--hair); display: flex; flex-direction: column; gap: 4px; }
+.method b { font-family: var(--font-display); font-size: 17px; font-weight: 600; }
+.method p { margin: 0; font-size: 14px; color: var(--muted); }
+.resume { display: inline-flex; align-items: center; gap: 10px; min-height: 40px; padding: 0 16px; border-radius: 999px; cursor: pointer; border: 1px solid var(--hair); background: var(--pill); color: var(--text); font-size: 13px; font-weight: 500; align-self: flex-start; }
+.err { position: relative; z-index: 2; margin: 12px auto 0; width: min(900px, calc(100% - 24px)); box-sizing: border-box; padding: 10px 14px; border-radius: 12px; background: color-mix(in srgb, var(--neg) 22%, var(--page-a)); border: 1px solid var(--neg); font-size: 14px; }
+.loading { color: var(--muted); font-size: 14px; padding: 24px 0; }
+
+/* Hírszalag */
+.ticker { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(18px + env(safe-area-inset-bottom, 0px)); z-index: 200; display: flex; align-items: center; gap: 10px; max-width: calc(100% - 32px); box-sizing: border-box; padding: 6px 14px 6px 6px; border-radius: 999px; background: var(--bar); border: 1px solid var(--hair); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); box-shadow: 0 10px 30px rgba(0,0,0,0.35); font-size: 13px; }
+.ticker button { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--hair); background: var(--pill); cursor: pointer; display: grid; place-items: center; flex-shrink: 0; }
+.ticker .tk { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: opacity 0.3s; }
+.ticker .tk b { font-weight: 600; }
+.ticker .lbl { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--acc); flex-shrink: 0; }
+@media (max-width: 640px) { .ticker .lbl { display: none; } }
+
+/* Lapjelző sáv (asztali) és folyamatjelző (mobil) */
+.rail { position: fixed; right: max(24px, env(safe-area-inset-right, 0px)); top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 6px; z-index: 200; }
+.rail button { display: flex; align-items: center; justify-content: flex-end; gap: 10px; min-height: 30px; border: 0; background: none; cursor: pointer; padding: 0; font-size: 12px; color: var(--muted); text-align: right; }
+.rail .d { width: 7px; height: 7px; border-radius: 50%; background: var(--dot-off); flex-shrink: 0; transition: all 0.3s ease; }
+.rail button[aria-current="true"] { color: var(--text); font-weight: 600; }
+.rail button[aria-current="true"] .d { width: 12px; height: 12px; background: var(--chart); box-shadow: 0 0 0 4px var(--aglow), 0 0 14px var(--chart); }
+.rail button:hover { color: var(--text); }
+@media (max-width: 1099px) { .rail { display: none; } }
+.progress { position: fixed; top: calc(var(--top) + 8px); left: max(16px, env(safe-area-inset-left, 0px)); right: max(16px, env(safe-area-inset-right, 0px)); z-index: 200; display: none; gap: 4px; }
+.progress span { flex: 1; height: 3px; border-radius: 2px; background: var(--track); transition: background 0.3s; }
+.progress span.on { background: var(--chart); box-shadow: 0 0 8px var(--chart); }
+@media (max-width: 1099px) { .progress { display: flex; } }
+
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; } }
 </style>
 </head>
@@ -110,8 +257,21 @@ div.cover { opacity: 0.6; }
 <header class="top">
   <div class="top-in">
     <div class="brand">
-      <a class="logo" href="./">Figyelő</a>
+      <a class="logo" href="../" aria-label="Figyelő – vissza a kiadványválasztóhoz">Figyelő</a>
       <span class="edition mono" id="edition">Éjszakai kiadás</span>
+      <span class="sep"></span>
+      <div class="menu" id="menu">
+        <button class="menu-btn" id="menu-btn" type="button" aria-haspopup="true" aria-expanded="false">
+          <span>Hírfigyelő</span>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <ul class="menu-list" id="menu-list" hidden>
+          <li><a href="./" aria-current="page"><span class="lbl"><span class="dot" style="background:var(--hir)"></span>Hírfigyelő</span><span class="mono muted" style="font-size:10px">10 lap</span></a></li>
+          <li><a href="../fb/"><span class="lbl"><span class="dot" style="background:var(--fb)"></span>Facebook-figyelő</span><span class="mono muted" style="font-size:10px">Helyi</span></a></li>
+          <li><span class="dis"><span class="lbl"><span class="dot" style="background:var(--koz)"></span>Kisközösségek</span><span class="mono muted" style="font-size:10px">Hamarosan</span></span></li>
+          <li><a href="../"><span class="lbl">← Kiadványválasztó</span></a></li>
+        </ul>
+      </div>
     </div>
     <div class="toggle" role="group" aria-label="Kiadás">
       <button type="button" id="t-night" aria-pressed="true">
@@ -129,97 +289,454 @@ div.cover { opacity: 0.6; }
 <canvas class="waves" id="waves" aria-hidden="true"></canvas>
 <div class="halo" aria-hidden="true"></div>
 
-<main aria-labelledby="v-title">
-  <div class="v-in">
-    <div class="v-head">
-      <span class="mono muted">Válassz kiadványt</span>
-      <h1 id="v-title">Mai kiadványaink</h1>
-    </div>
-    <div class="covers">
-      <a class="cover" href="hirek/" style="--cacc:var(--hir);--cglow:var(--glow-hir)">
-        <span class="c-top mono"><span>Országkép</span><span class="today"></span></span>
-        <span class="c-title">Hírfigyelő</span>
-        <span class="c-kick mono">Mit ír a sajtó</span>
-        <span class="c-head">Hazai és külföldi hírforrások naponta, MI-támogatott elemzéssel</span>
-        <span class="c-panel"><span style="display:flex;flex-direction:column;gap:2px"><span class="c-num">32</span><span class="c-metric">figyelt hírcsatorna</span></span><svg width="96" height="36" viewBox="0 0 96 36" aria-hidden="true"><polyline fill="none" stroke="var(--hir)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" points="2,30 18,26 34,28 50,18 66,20 82,9 94,5"/></svg></span>
-        <span class="c-foot"><span class="muted">Naponta frissül</span><span class="c-cta">Megnyitás →</span></span>
-      </a>
-      <a class="cover" href="fb/" style="--cacc:var(--fb);--cglow:var(--glow-fb)">
-        <span class="c-top mono"><span>Helyi</span><span class="today"></span></span>
-        <span class="c-title">Facebook-figyelő</span>
-        <span class="c-kick mono">A kerület közösségi oldalai</span>
-        <span class="c-head">Ki mit posztol, és hogyan reagálnak rá a kommentelők</span>
-        <span class="c-panel"><span style="display:flex;flex-direction:column;gap:2px"><span class="c-num" id="fb-num">–</span><span class="c-metric" id="fb-metric">poszt az elmúlt 15 napban</span></span><svg width="96" height="36" viewBox="0 0 96 36" aria-hidden="true"><polyline fill="none" stroke="var(--fb)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" points="2,30 18,26 34,28 50,18 66,20 82,9 94,5"/></svg></span>
-        <span class="c-foot"><span class="muted" id="fb-upd">Naponta frissül</span><span class="c-cta">Megnyitás →</span></span>
-      </a>
-      <div class="cover" aria-disabled="true" style="--cacc:var(--koz);--cglow:var(--glow-koz)">
-        <span class="c-top mono"><span>Helyi</span><span class="today"></span></span>
-        <span class="c-title">Kisközösségek</span>
-        <span class="c-kick mono">Hamarosan</span>
-        <span class="c-head">Hamarosan induló rovat</span>
-        <span class="c-panel"><span style="display:flex;flex-direction:column;gap:2px"><span class="c-num">–</span><span class="c-metric">aktív közösség</span></span></span>
-        <span class="c-foot"><span class="muted">Hamarosan</span><span class="c-cta">Hamarosan indul</span></span>
-      </div>
-    </div>
-    <div class="v-foot">
-      <span class="muted swipe-hint">Húzd oldalra a többi kiadványért</span>
-      <span class="muted">Kattints egy címlapra a megnyitáshoz</span>
-    </div>
+<main aria-label="Hírfigyelő">
+  <div class="err" id="err" role="alert" hidden></div>
+  <div class="progress" id="progress" aria-hidden="true"></div>
+  <div class="scroller" id="scroller" tabindex="-1"></div>
+  <nav class="rail" id="rail" aria-label="A rovat lapjai"></nav>
+  <div class="ticker" id="ticker">
+    <button type="button" id="tk-btn" aria-label="Hírszalag megállítása">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" id="tk-ico"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
+    </button>
+    <span class="lbl">Témák most</span>
+    <span class="tk" id="tk-txt" aria-live="polite">Betöltés…</span>
   </div>
 </main>
 
-<script src="assets/config.js"></script>
 <script>
 (function () {
-  "use strict";
-  var $ = function (id) { return document.getElementById(id); };
-  var store = {
-    get: function (k) { try { return window.localStorage.getItem(k); } catch (e) { return null; } },
-    set: function (k, v) { try { window.localStorage.setItem(k, v); } catch (e) {} }
-  };
-  var dateStr = "";
-  try { dateStr = new Intl.DateTimeFormat("hu-HU", { month: "long", day: "numeric" }).format(new Date()); } catch (e) {}
-  Array.prototype.forEach.call(document.querySelectorAll(".today"), function (el) { el.textContent = dateStr; });
+"use strict";
+/* ======= Supabase: a PUBLISHABLE (nyilvános) kulcs. SOHA ne a secret key-t! ======= */
+const CFG = { URL: "https://fuovmlujjuhonhumzwgb.supabase.co", KEY: "sb_publishable_4uZ7277YwkxD3eeYgNNIpw_oW6ORvKR" };
 
-  function setEdition(day, save) {
-    document.documentElement.classList.toggle("nappali", day);
-    $("t-night").setAttribute("aria-pressed", day ? "false" : "true");
-    $("t-day").setAttribute("aria-pressed", day ? "true" : "false");
-    $("edition").textContent = (day ? "Nappali kiadás" : "Éjszakai kiadás") + " · " + dateStr;
-    if (save) store.set("figyelo-kiadas", day ? "nappali" : "ejszakai");
+/* ---------- segédek ---------- */
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const safe = u => { try { const x = new URL(u); return /^https?:$/.test(x.protocol) ? x.href : "#"; } catch (e) { return "#"; } };
+const ext = (url, text) => '<a href="' + esc(safe(url)) + '" target="_blank" rel="noopener noreferrer">' + esc(text) + "</a>";
+const arr = x => Array.isArray(x) ? x : [];
+const avg = a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0;
+const H = 36e5, now = Date.now();
+const store = { get: k => { try { return localStorage.getItem(k); } catch (e) { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} } };
+const reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+const CO = { HU: "Magyarország", USA: "USA", UK: "Egyesült Királyság", DE: "Németország", FR: "Franciaország" };
+const REL = { fidesz_kozeli: ["Fidesz-közeli", "#F2B35B"], fuggetlen: ["Független", "#7FD1A6"], tisza_kozeli: ["Tisza-közeli", "#6FB3FF"], kozszolgalati: ["Közszolgálati", "#8C929C"], ismeretlen: ["Ismeretlen", "#B9BDC4"] };
+const LG = { bal: "bal", kozep_bal: "bal", kozep: "közép", kozep_jobb: "jobb", jobb: "jobb" }, LC = { bal: "#6FB3FF", "közép": "#B9BDC4", jobb: "#F2B35B" };
+const PAL = ["#6FB3FF", "#F2B35B", "#7FD1A6", "#B79CFF", "#F28DB2"];
+const PARTY = { Tisza: "#6FB3FF", Fidesz: "#F2B35B", "Mi Hazánk": "#7FD1A6", DK: "#B79CFF", MKKP: "#F28DB2" };
+const lab = s => s == null ? "–" : s < -.25 ? "kritikus" : s > .25 ? "pozitív" : "semleges";
+const tone = s => s == null ? "neu" : s < -.25 ? "neg" : s > .25 ? "pos" : "neu";
+const sym = s => s == null ? "?" : s < -.25 ? "▼" : s > .25 ? "▲" : "●";
+const chip = s => '<span class="chip ' + tone(s) + '">' + sym(s) + " " + lab(s) + "</span>";
+const ix = (a, f, min) => { const v = a.map(f).filter(x => x != null); return v.length < (min || 10) ? null : Math.round((avg(v) + 1) * 50); };
+const dk = a => String(a.fetched_at).slice(0, 10);
+
+let D = null;
+const S = a => (D && D.src[a.source]) || {};
+const recent = (a, hrs) => a.filter(x => now - new Date(x.fetched_at) < hrs * H);
+const P = () => D && D.pack && D.pack.content;
+const tag = a => a.country === "HU" ? (REL[S(a).relation] || REL.ismeretlen)[0] : (LG[S(a).leaning] ? "külföldi: " + LG[S(a).leaning] : "külföldi");
+
+/* ---------- adatok (Supabase) ---------- */
+async function q(t, qs, pages) {
+  let out = [];
+  for (let p = 0; p < (pages || 1); p++) {
+    const r = await fetch(CFG.URL + "/rest/v1/" + t + "?" + qs + "&limit=1000&offset=" + (p * 1000), { headers: { apikey: CFG.KEY } });
+    if (!r.ok) throw new Error(t + " " + r.status);
+    const j = await r.json(); out = out.concat(j); if (j.length < 1000) break;
   }
-  $("t-night").addEventListener("click", function () { setEdition(false, true); });
-  $("t-day").addEventListener("click", function () { setEdition(true, true); });
-  setEdition(store.get("figyelo-kiadas") === "nappali", false);
+  return out;
+}
+async function live() {
+  const since = new Date(now - 7 * 24 * H).toISOString(), ma = new Date().toISOString().slice(0, 10);
+  const [arts, fh, srcs, rels, govs, polls, stats, pack] = await Promise.all([
+    q("articles", "select=id,source,country,title,title_hu,url,fetched_at,sentiment,hu_sentiment,gov_stance,about_hungary,about_gov,topics&analyzed=eq.true&fetched_at=gte." + since + "&order=fetched_at.desc", 5),
+    q("articles", "select=id,source,country,title,title_hu,url,fetched_at,hu_sentiment,about_hungary&analyzed=eq.true&country=neq.HU&about_hungary=eq.true&hu_sentiment=not.is.null&order=fetched_at.desc"),
+    q("sources", "select=name,country,leaning"), q("source_relations", "select=source,relation,valid_from,valid_to&order=valid_from.asc"),
+    q("governments", "select=name,party,valid_from,valid_to"), q("polls", "select=day,institute,party,pct,sample,source_url&order=day.desc"),
+    q("daily_stats", "select=day,scope,avg,n&order=day.desc", 3), q("daily_pack", "select=day,content&order=day.desc&limit=1")]);
+  const src = {}; srcs.forEach(s => src[s.name] = { country: s.country, leaning: s.leaning, relation: null });
+  rels.forEach(r => { if (src[r.source] && r.valid_from <= ma && (!r.valid_to || r.valid_to >= ma)) src[r.source].relation = r.relation; });
+  return { articles: arts, fh, src, govs, polls, stats, pack: pack[0] || null };
+}
 
-  Array.prototype.forEach.call(document.querySelectorAll("a.cover"), function (el) {
-    el.addEventListener("pointermove", function (e) {
-      var r = el.getBoundingClientRect();
-      el.style.setProperty("--mx", ((e.clientX - r.left) / r.width * 100).toFixed(1) + "%");
-      el.style.setProperty("--my", ((e.clientY - r.top) / r.height * 100).toFixed(1) + "%");
+/* ---------- rajzolók (SVG) ---------- */
+function gaugeSvg(v) {
+  const cx = 120, cy = 120, r = 92, val = v == null ? 50 : v;
+  const pt = (x, rr) => { const a = Math.PI * (1 - x / 100); return [cx + rr * Math.cos(a), cy - rr * Math.sin(a)]; };
+  const arc = (a, b, col) => { const p = pt(a, r), q2 = pt(b, r); return '<path d="M' + p[0].toFixed(1) + " " + p[1].toFixed(1) + " A" + r + " " + r + " 0 0 1 " + q2[0].toFixed(1) + " " + q2[1].toFixed(1) + '" fill="none" stroke="' + col + '" stroke-width="16"/>'; };
+  const n = pt(val, r - 22);
+  return '<svg viewBox="0 0 240 132" role="img" aria-label="Mutató: ' + (v == null ? "nincs elég adat" : v + " a 100-ból") + ', 50 a semleges">' +
+    arc(0, 39.5, "var(--neg)") + arc(40.5, 59.5, "var(--neu)") + arc(60.5, 100, "var(--pos)") +
+    (v == null ? "" : '<line x1="' + cx + '" y1="' + cy + '" x2="' + n[0].toFixed(1) + '" y2="' + n[1].toFixed(1) + '" stroke="var(--panel-fg)" stroke-width="3.5" stroke-linecap="round"/>') +
+    '<circle cx="' + cx + '" cy="' + cy + '" r="7" fill="var(--panel-fg)"/></svg>';
+}
+function chart100(series, labels, opt) {
+  opt = opt || {};
+  const W = 600, Hh = 240, L = 34, R = 12, T = 10, B = 26, min = 0, max = opt.max || 100;
+  const ticks = opt.ticks || [0, 25, 50, 75, 100], n = labels.length;
+  if (!n) return '<p class="empty">Nincs adat ebben az időszakban.</p>';
+  const x = i => L + (W - L - R) * (n === 1 ? 0.5 : i / (n - 1));
+  const y = v => T + (Hh - T - B) * (1 - (v - min) / (max - min));
+  let s = '<svg viewBox="0 0 ' + W + " " + Hh + '" role="img" aria-label="' + esc(opt.label || "Vonaldiagram") + '">';
+  ticks.forEach(t => { s += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + y(t) + '" y2="' + y(t) + '" stroke="var(--panel-grid)"/><text x="' + (L - 6) + '" y="' + (y(t) + 4) + '" text-anchor="end" fill="var(--panel-muted)" font-size="10" font-family="IBM Plex Mono, monospace">' + t + (opt.unit || "") + "</text>"; });
+  if (opt.mid) s += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + y(opt.mid) + '" y2="' + y(opt.mid) + '" stroke="var(--panel-muted)" stroke-dasharray="4 5" stroke-opacity="0.7"/>';
+  const every = Math.ceil(n / 7);
+  labels.forEach((lb, i) => { if ((i % every === 0 && i < n - 2) || i === n - 1) s += '<text x="' + x(i) + '" y="' + (Hh - 7) + '" text-anchor="' + (i === 0 ? "start" : i === n - 1 ? "end" : "middle") + '" fill="var(--panel-muted)" font-size="10" font-family="IBM Plex Mono, monospace">' + esc(lb) + "</text>"; });
+  series.forEach((se, si) => {
+    const col = se[1], d = se[2]; let seg = [];
+    const flush = () => { if (seg.length > 1) s += '<polyline fill="none" stroke="' + col + '" stroke-width="' + (si === 0 ? 3 : 2) + '" stroke-linecap="round" stroke-linejoin="round" points="' + seg.join(" ") + '"/>'; seg = []; };
+    d.forEach((v, i) => { if (v == null) flush(); else seg.push(x(i).toFixed(1) + "," + y(v).toFixed(1)); });
+    flush();
+    d.forEach((v, i) => {
+      if (v == null) return;
+      const lone = d[i - 1] == null && d[i + 1] == null;
+      if (lone || n <= 40) s += '<circle cx="' + x(i).toFixed(1) + '" cy="' + y(v).toFixed(1) + '" r="' + (lone ? 4.5 : 2.4) + '" fill="' + col + '"><title>' + esc(se[0] + ", " + labels[i] + ": " + v + (opt.unit || "")) + "</title></circle>";
+      if (lone) s += '<text x="' + x(i).toFixed(1) + '" y="' + (y(v) - 10).toFixed(1) + '" text-anchor="middle" fill="var(--panel-fg)" font-size="11" font-family="IBM Plex Mono, monospace">' + v + "</text>";
     });
   });
+  return s + "</svg>";
+}
+function legend(items) { return '<div class="legend">' + items.map(it => '<span><i style="background:' + it[1] + '"></i>' + esc(it[0]) + "</span>").join("") + "</div>"; }
+function donut(items) {
+  const total = items.reduce((a, b) => a + b[1], 0);
+  if (!total) return '<p class="empty">Nincs adat az elmúlt 7 napból.</p>';
+  const r = 70, c = 2 * Math.PI * r; let off = 0;
+  let s = '<svg viewBox="0 0 200 200" role="img" aria-label="Kördiagram, összesen ' + total + ' cikk"><g transform="rotate(-90 100 100)">';
+  items.forEach(it => { const len = c * it[1] / total, l2 = Math.max(0, len - 2); s += '<circle cx="100" cy="100" r="' + r + '" fill="none" stroke="' + it[2] + '" stroke-width="26" stroke-dasharray="' + l2.toFixed(2) + " " + (c - l2).toFixed(2) + '" stroke-dashoffset="' + (-off).toFixed(2) + '"/>'; off += len; });
+  s += '</g><text x="100" y="98" text-anchor="middle" fill="var(--panel-fg)" font-size="28" font-weight="600" font-family="Fraunces, Georgia, serif">' + total.toLocaleString("hu-HU") + '</text><text x="100" y="118" text-anchor="middle" fill="var(--panel-muted)" font-size="11" font-family="Inter, sans-serif">cikk</text></svg>';
+  const lg = '<div class="dl">' + items.map(it => '<div><i style="background:' + it[2] + '"></i><span>' + esc(it[0]) + '</span><span class="n">' + it[1].toLocaleString("hu-HU") + '</span><span class="p">' + (it[1] / total * 100).toFixed(1).replace(".", ",") + "%</span></div>").join("") + "</div>";
+  return '<div class="donut-wrap">' + s + lg + "</div>";
+}
+const panel = (title, src, inner) => '<div class="panel"><div class="panel-head"><b>' + esc(title) + '</b><span class="src">' + esc(src) + "</span></div>" + inner + "</div>";
+const tabsHTML = (k, items, extra) => '<div class="tabs" role="group">' + items.map(it => '<button type="button" data-set="' + k + '" data-val="' + esc(it[0]) + '" aria-pressed="' + (String(st[k]) === String(it[0])) + '"' + (it[2] ? ' class="dim"' : "") + ">" + esc(it[1]) + "</button>").join("") + (extra || "") + "</div>";
 
-  /* Facebook-figyelő címlap: élő számok a Pi-ről, ha elérhető (különben marad a „–”) */
-  var api = ((window.FIGYELO && window.FIGYELO.FB_API) || "").replace(/\/+$/, "");
-  if (api && !/CSERELD-KI/.test(api) && window.fetch) {
-    var ctl = window.AbortController ? new AbortController() : null;
-    var timer = setTimeout(function () { if (ctl) ctl.abort(); }, 8000);
-    fetch(api + "/api/dashboard", ctl ? { signal: ctl.signal } : {}).then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
-      clearTimeout(timer);
-      if (!d || !d.accounts) return;
-      var n = d.accounts.reduce(function (s, a) { return s + (a.post_count || 0); }, 0);
-      $("fb-num").textContent = String(n);
-      $("fb-metric").textContent = "poszt az elmúlt " + (d.window_days || 15) + " napban";
-      if (d.last_ingest) {
-        try { $("fb-upd").textContent = "Frissítve: " + new Intl.DateTimeFormat("hu-HU", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Budapest" }).format(new Date(d.last_ingest)); } catch (e) {}
-      }
-    }).catch(function () { clearTimeout(timer); });
+/* ---------- állapot ---------- */
+const st = { tlk: "hu", tAll: false, nt: 0, rc: "HU", tg: "intl", tr: 30, mm: "hu", pv: "chart", fc: "", fb: "", fs: "" };
+const NUM = { tr: 1, nt: 1 };
+const MAXF = 30, MINF = 10;
+
+/* ---------- lapok ---------- */
+const LAPS = [
+  { type: "overview", short: "Áttekintés" },
+  { type: "top", short: "Napi top hírek", title: "Napi top hírek", kicker: "Az azonos eseményről szóló cikkek összevonva" },
+  { type: "nap", short: "A nap cikke", title: "A nap cikke" },
+  { type: "rep", short: "Országjelentések", title: "Országjelentések" },
+  { type: "trend", short: "Napi trend", title: "Napi trend", kicker: "0–100 index · 50 = semleges" },
+  { type: "map", short: "Médiatérkép", title: "Médiatérkép", kicker: "A források cikkei kötődés, illetve irányzat szerint · utolsó 7 nap" },
+  { type: "polls", short: "Kutatások", title: "Közvélemény-kutatások", kicker: "A kutatások átlaga napokra", dek: "Az adatokat kézzel viszik fel. Az egyes kutatások módszere eltérő." },
+  { type: "latest", short: "Legújabb cikkek", title: "Legújabb cikkek", kicker: "Szűrhető lista · utolsó 7 nap" },
+  { type: "video", short: "Napi videó", title: "Napi videó", kicker: "Magyarázó animáció a nap témájáról" },
+  { type: "method", short: "Módszertan", title: "Honnan jönnek a számok?", kicker: "Módszertan és korlátok" }
+];
+
+function toc() {
+  const items = LAPS.slice(1, 6).map((l, k) => '<button type="button" data-goto="' + (k + 1) + '"><span class="n">' + (k + 2) + '</span><span class="t-name">' + esc(l.short) + '</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>').join("");
+  return '<nav class="col side" aria-label="Ebben a kiadásban"><h3 class="h3">Ebben a kiadásban</h3><div class="toc">' + items + '</div><span class="note">…és még ' + (LAPS.length - 6) + " lap. Görgess tovább.</span></nav>";
+}
+
+const R = {
+  overview() {
+    const w = recent(D.articles, 168), d = w.filter(a => a.country === "HU" && a.about_gov && a.gov_stance != null);
+    const f = (D.fh || []).slice().sort((a, b) => new Date(b.fetched_at) - new Date(a.fetched_at)).slice(0, MAXF);
+    const v1 = ix(f, a => a.hu_sentiment, MINF), v2 = ix(d, a => a.gov_stance);
+    const gp = (D.govs.find(g => !g.valid_to) || {}).party;
+    const lim = new Date(now - 30 * 24 * H).toISOString().slice(0, 10);
+    const pv = gp ? D.polls.filter(x => x.party === gp && x.day >= lim).map(x => x.pct) : [];
+    const pa = pv.length ? avg(pv).toFixed(1) + "%" : null;
+    const mini = (l, v) => '<div class="mini"><b>' + (v == null ? "–" : esc(v)) + "</b><span>" + esc(l) + "</span></div>";
+    const n1 = f.length ? "A külföldi sajtó hangja Magyarországról az utolsó " + f.length + " (legfeljebb " + MAXF + ") Magyarországról szóló külföldi cikk alapján, " + dk(f[f.length - 1]) + " és " + dk(f[0]) + " között. 50 = semleges, " + MINF + " cikk alatt „kevés adat”." : "Még nincs Magyarországról szóló külföldi cikk az adatbázisban.";
+    const list = f.map(a => '<div><span>' + chip(a.hu_sentiment) + '</span><span>' + ext(a.url, a.title_hu || a.title) + '<br><span class="m">' + esc(a.source) + " · " + esc(CO[a.country] || a.country) + " · " + dk(a) + "</span></span></div>").join("");
+    const g1 = '<div class="panel gauge"><h3>1. Nemzetközi megítélés</h3>' + gaugeSvg(v1) + '<div class="gv">' + (v1 == null ? "–" : v1) + " <small>/ 100</small></div>" +
+      '<div class="minis">' + mini("cikk (n)", f.length) + ["USA", "UK", "DE", "FR"].map(c => mini(CO[c], ix(f.filter(a => a.country === c), a => a.hu_sentiment, 4))).join("") + "</div>" +
+      "<p>" + esc(n1) + "</p>" + (f.length ? '<details><summary>A számításban szereplő cikkek (' + f.length + ')</summary><div class="glist">' + list + "</div></details>" : "") + "</div>";
+    const g2 = '<div class="panel gauge"><h3>2. A kormány hazai megítélése</h3>' + gaugeSvg(v2) + '<div class="gv">' + (v2 == null ? "–" : v2) + " <small>/ 100</small></div>" +
+      '<div class="minis">' + mini("cikk (n)", d.length) + ["fidesz_kozeli", "fuggetlen", "tisza_kozeli"].map(r => mini(REL[r][0], ix(d.filter(a => S(a).relation === r), a => a.gov_stance, 4))).join("") + mini((gp || "Kormánypárt") + " – kutatási átlag", pa) + "</div>" +
+      "<p>A hazai sajtó hangja a kormányról (médiahang) és a kutatások átlaga. A hangulat nem támogatottság: a médiahang nem a társadalom véleménye.</p></div>";
+    const T = P() && P().top10, t0 = T && arr(T.hu).find(x => !(x.kategoria === "sport" || x.kategoria === "bulvar"));
+    const first = t0 ? '<h2 class="lead">' + esc(t0.cim) + '</h2><div style="display:flex;gap:8px;align-items:center;font-size:12px;color:var(--muted);flex-wrap:wrap">' + (t0.forrasok_szama || 0) + " általunk is szemlézett hírforrás " + (t0.hangulat != null ? chip(t0.hangulat) : "") + "</div>" : '<h2 class="lead">Még nincs jóváhagyott napi top lista.</h2>';
+    return '<h1 class="lap-title rovatnev">Hírfigyelő</h1><span class="snap-note">Országimázs-barométer · élő adat' + (D.pack ? " · jelentés napja: " + esc(D.pack.day) : "") + "</span>" +
+      '<div class="gauges">' + g1 + g2 + "</div>" +
+      '<div class="grid2"><div class="col"><span class="kick mono">A nap első híre</span>' + first + '<button type="button" class="resume" data-goto="1">A nap top hírei →</button></div>' + toc() + "</div>";
+  },
+  top() {
+    const T = P() && P().top10;
+    const head = tabsHTML("tlk", [["hu", "Magyar"], ["nemzetkozi", "Nemzetközi"]], '<button type="button" class="push" data-toggle="tAll" aria-pressed="' + st.tAll + '">' + (st.tAll ? "Csak közéleti hírek" : "Sport és bulvár is") + "</button>");
+    if (!T || !arr(T[st.tlk]).length) return head + '<p class="empty">Még nincs jóváhagyott napi top lista.</p>';
+    const items = arr(T[st.tlk]).filter(x => st.tAll || !(x.kategoria === "sport" || x.kategoria === "bulvar")).slice(0, 10);
+    if (!items.length) return head + '<p class="empty">Nincs találat ezzel a szűrővel.</p>';
+    return head + "<div>" + items.map((x, i) => '<div class="news"><span class="r">' + (i + 1) + "</span><div><b>" + esc(x.cim) + '</b><div class="meta">' + (x.forrasok_szama || 0) + " általunk is szemlézett hírforrás " + (x.hangulat != null ? chip(x.hangulat) : "") + "</div>" +
+      "<details><summary>Források (" + arr(x.cikkek).length + ")</summary><ul>" + arr(x.cikkek).slice(0, 8).map(c => "<li>" + ext(c.url, c.cim || c.nev || "cikk") + " – <em>" + esc(c.nev) + "</em></li>").join("") + "</ul></details></div></div>").join("") + "</div>" +
+      '<p class="note">A tételek az azonos eseményről szóló cikkeket vonják össze. A címet MI írta, a számokat a program számolta. A hangnem a cikkek átlaga, nem a társadalom véleménye.</p>';
+  },
+  nap() {
+    const N = P() && P().nap_cikke;
+    if (!N) return '<p class="empty">Még nincs jóváhagyott napi elemzés.</p>';
+    const Hh = N.hatter || {}, nm = arr(Hh.mult).length + arr(Hh.nyitott_kerdesek).length, nk = arr(Hh.lehetseges_kovetkezmenyek).length;
+    let out = tabsHTML("nt", [[0, "A nap cikke"], [1, "Háttér" + (arr(Hh.mult).length ? " (" + arr(Hh.mult).length + ")" : ""), !nm], [2, "Lehetséges következmények" + (nk ? " (" + nk + ")" : ""), !nk]]);
+    if (st.nt === 0) {
+      const names = new Set(arr(N.forrasok).map(f => f && f.nev).filter(Boolean));
+      if (names.size) out += '<span class="kick mono">' + names.size + " általunk is szemlézett hírforrás</span>";
+      out += '<h3 class="lead">' + esc(N.tema) + '</h3><p class="rep-intro">' + esc(N.magyarazat) + "</p>";
+      if (arr(N.tenyek).length) out += '<ul class="bul">' + arr(N.tenyek).slice(0, 5).map(t => "<li>" + esc(t) + "</li>").join("") + "</ul>";
+      if (arr(N.forrasok).length) out += '<div class="col"><span class="kick mono">Források</span><div class="src-chips">' + arr(N.forrasok).filter(f => f && f.url).map(f => "<span>" + ext(f.url, f.nev || "forrás") + "</span>").join("") + "</div></div>";
+    } else if (st.nt === 1) {
+      const mult = arr(Hh.mult), nyk = arr(Hh.nyitott_kerdesek);
+      if (!mult.length && !nyk.length) { out += '<p class="empty">Ehhez a naphoz nincs háttéranyag.</p>'; if (Hh.keresesi_megjegyzes) out += '<p class="note">' + esc(Hh.keresesi_megjegyzes) + "</p>"; return out; }
+      if (mult.length) out += '<h3 class="h3">Mi történt korábban?</h3><ol class="tl">' + mult.slice(0, 8).map(m => '<li><span class="when">' + esc(m.datum) + '</span><span class="pin"></span><div class="what">' + esc(m.tenyek) + (m.forras && m.forras.url ? "<span>Külső forrás (nem ellenőrzött): " + ext(m.forras.url, m.forras.nev || "forrás") + "</span>" : "") + "</div></li>").join("") + "</ol>";
+      if (nyk.length) out += '<h3 class="h3">Nyitott kérdések</h3><ul class="bul">' + nyk.slice(0, 5).map(x => "<li>" + esc(x) + "</li>").join("") + "</ul>";
+      if (Hh.keresesi_megjegyzes) out += '<p class="note">Keresési megjegyzés: ' + esc(Hh.keresesi_megjegyzes) + "</p>";
+      out += '<p class="note">A háttéranyagot MI gyűjtötte webes keresésből; a külső linkeket nem ellenőriztük automatikusan.</p>';
+    } else {
+      const ks = arr(Hh.lehetseges_kovetkezmenyek), BZ = { alacsony: 1, "közepes": 2, magas: 3 };
+      out += '<div class="warn">Értékelés, nem tény. A lehetséges kimenetelek MI-becslések, nem előrejelzések.</div>';
+      if (!ks.length) return out + '<p class="empty">Ehhez a naphoz nincs elemzett kimenetel.</p>';
+      out += ks.slice(0, 5).map(k => { const b = BZ[k.bizonytalansag] || 2; return '<div class="kc"><b>' + esc(k.cim) + "</b><div>" + esc(k.leiras) + '</div><div class="m"><span class="seg">' + [1, 2, 3].map(i => '<i class="' + (i <= b ? "f" : "") + '"></i>').join("") + "</span>Bizonytalanság: " + esc(k.bizonytalansag || "közepes") + "</div></div>"; }).join("");
+    }
+    return out;
+  },
+  rep() {
+    const O = P() && P().orszagjelentesek;
+    let out = tabsHTML("rc", Object.entries(CO));
+    if (!O || !O[st.rc]) return out + '<p class="empty">Még nincs jóváhagyott napi jelentés ehhez az országhoz.</p>';
+    const r = O[st.rc];
+    out += '<span class="snap-note">Jelentés napja: ' + esc(D.pack.day) + " · MI-támogatott elemzés, átnézve</span>";
+    if (r.osszkep) out += '<p class="rep-intro">' + esc(r.osszkep) + "</p>";
+    out += arr(r.narrativak).slice(0, 5).map(n => '<div class="rep-sec"><b>' + esc(n.cim) + "</b><p>" + esc(n.leiras) + '</p><span class="from">Források: ' + arr(n.forrasok).slice(0, 6).map(f => { const nm = typeof f === "string" ? f : (f && f.nev) || "forrás"; return f && f.url ? ext(f.url, nm) : esc(nm); }).join(", ") + "</span></div>").join("");
+    const k = r.kormany_kep || r.magyarorszag_kepe;
+    if (k) out += '<div class="rep-sec hu"><b>' + (st.rc === "HU" ? "A kormány képe a hazai sajtóban" : "Magyarország képe") + "</b><p>" + esc(k) + "</p></div>";
+    return out;
+  },
+  trend() {
+    const TS = { intl: [["intl", "Összes"], ["intl_USA", "USA"], ["intl_UK", "UK"], ["intl_DE", "DE"], ["intl_FR", "FR"]], dom: [["dom", "Összes"], ["dom_fidesz_kozeli", "Fidesz-közeli"], ["dom_fuggetlen", "Független"], ["dom_tisza_kozeli", "Tisza-közeli"]] };
+    const days = Array.from({ length: st.tr }, (_, i) => new Date(now - (st.tr - 1 - i) * 24 * H).toISOString().slice(0, 10));
+    const series = TS[st.tg].map(([sc, l], i) => { const m = {}; D.stats.filter(s => s.scope === sc).forEach(s => m[s.day] = s); return [l, PAL[i % PAL.length], days.map(d => m[d] && m[d].avg != null && m[d].n >= 3 ? Math.round((m[d].avg + 1) * 50) : null)]; });
+    const title = st.tg === "intl" ? "A külföldi sajtó hangja Magyarországról, naponta" : "Hazai médiahang a kormányról, naponta";
+    return '<div class="tabs" style="justify-content:space-between">' + tabsHTML("tg", [["intl", "Nemzetközi"], ["dom", "Hazai médiahang"]]) + tabsHTML("tr", [[7, "7 nap"], [30, "30 nap"], [90, "90 nap"]]) + "</div>" +
+      panel(title, "utolsó " + st.tr + " nap · élő", chart100(series, days.map(d => d.slice(5)), { mid: 50, label: title }) + legend(series.map(s => [s[0], s[1]]))) +
+      '<p class="note">Napi pont csak ott van, ahol legalább 3 cikk volt. A külföldi napi pontok ezért ritkábbak.</p>';
+  },
+  map() {
+    const w = recent(D.articles, 168), cnt = {}, col = {};
+    let note;
+    if (st.mm === "hu") { w.filter(a => a.country === "HU").forEach(a => { const r = REL[S(a).relation] || REL.ismeretlen; cnt[r[0]] = (cnt[r[0]] || 0) + 1; col[r[0]] = r[1]; }); note = "A hazai források cikkei a kormányhoz/pártokhoz való kötődés szerint. A besorolás dátumozott, forrással, a Supabase-ben szerkeszthető. Kötődést ír le, nem minősítést."; }
+    else { w.filter(a => a.country !== "HU").forEach(a => { const g = LG[S(a).leaning]; if (!g) return; cnt[g] = (cnt[g] || 0) + 1; col[g] = LC[g]; }); note = "A külföldi források cikkei irányzat szerint (egyszerűsített, szubjektív besorolás)."; }
+    const items = Object.keys(cnt).map(k => [k, cnt[k], col[k]]).sort((a, b) => b[1] - a[1]);
+    return tabsHTML("mm", [["hu", "Hazai (kötődés)"], ["ext", "Külföldi (irányzat)"]]) + panel(st.mm === "hu" ? "Hazai források cikkei kötődés szerint" : "Külföldi források cikkei irányzat szerint", "utolsó 7 nap · élő", donut(items)) + '<p class="note">' + esc(note) + "</p>";
+  },
+  polls() {
+    let out = tabsHTML("pv", [["chart", "Grafikon"], ["list", "Felmérések listája"]]);
+    if (!D.polls.length) return out + '<p class="empty">Még nincs felvitt kutatási adat.</p>';
+    if (st.pv === "chart") {
+      const days = [...new Set(D.polls.map(p => p.day))].sort().slice(-24), pt = [...new Set(D.polls.map(p => p.party))];
+      const series = pt.map((p, i) => [p, PARTY[p] || PAL[i % PAL.length], days.map(d => { const v = D.polls.filter(x => x.party === p && x.day === d).map(x => x.pct); return v.length ? +avg(v).toFixed(1) : null; })]);
+      let mx = 0; series.forEach(s => s[2].forEach(v => { if (v != null && v > mx) mx = v; }));
+      const max = Math.max(20, Math.ceil(mx / 20) * 20), ticks = []; for (let t = 0; t <= max; t += 20) ticks.push(t);
+      return out + panel("Pártok támogatottsága (%)", "utolsó " + days.length + " felmérési nap · élő", chart100(series, days.map(d => d.slice(5)), { max, ticks, unit: "%", label: "Pártok támogatottsága" }) + legend(series.map(s => [s[0], s[1]])));
+    }
+    const g = {};
+    D.polls.forEach(p => { const k = p.day + "|" + p.institute, x = g[k] || (g[k] = { day: p.day, inst: p.institute, urls: new Set() }); if (p.source_url) x.urls.add(p.source_url); });
+    const host = u => { try { return new URL(u).hostname.replace(/^www\./, ""); } catch (e) { return "forrás"; } };
+    const L = Object.values(g).sort((a, b) => a.day < b.day ? 1 : a.day > b.day ? -1 : String(a.inst).localeCompare(b.inst));
+    return out + '<ul class="polls">' + L.map(x => '<li><span class="d">' + esc(x.day) + "</span><div>" + esc(x.inst) + "<br><span>" + ([...x.urls].length ? "Forrás: " + [...x.urls].slice(0, 3).map(u => ext(u, host(u))).join(", ") : "nincs megadott link") + "</span></div></li>").join("") + "</ul>" +
+      '<p class="note">Felmérésenként egy sor, a legújabb elöl. A linkek külső oldalakra mutatnak, ezeket nem ellenőrizzük automatikusan.</p>';
+  },
+  latest() {
+    const tags = [...new Set(D.articles.map(tag))].sort();
+    const sel = (k, first, opts) => '<select id="f-' + k + '" data-filt="' + k + '"><option value="">' + esc(first) + "</option>" + opts.map(o => '<option value="' + esc(o[0]) + '"' + (st[k] === o[0] ? " selected" : "") + ">" + esc(o[1]) + "</option>").join("") + "</select>";
+    const list = D.articles.filter(a => (!st.fc || a.country === st.fc) && (!st.fb || tag(a) === st.fb) && (!st.fs || lab(a.sentiment) === st.fs)).sort((a, b) => new Date(b.fetched_at) - new Date(a.fetched_at)).slice(0, 30);
+    return '<div class="filters"><label for="f-fc">Ország' + sel("fc", "Minden ország", Object.entries(CO)) + '</label><label for="f-fb">Kötődés / irányzat' + sel("fb", "Minden kötődés", tags.map(t => [t, t])) + '</label><label for="f-fs">Hangulat' + sel("fs", "Minden hangulat", [["kritikus", "kritikus"], ["semleges", "semleges"], ["pozitív", "pozitív"]]) + "</label></div>" +
+      "<div>" + (list.length ? list.map(a => '<div class="art">' + ext(a.url, a.title_hu || a.title) + '<div class="meta">' + chip(a.sentiment) + "<span>" + esc(a.source) + " · " + esc(CO[a.country] || a.country) + " · " + esc(tag(a)) + " · " + Math.round((now - new Date(a.fetched_at)) / H) + " órája</span></div></div>").join("") : '<p class="empty">Nincs találat.</p>') + "</div>" +
+      '<p class="note">A legfrissebb 30 cikk a szűrés szerint. Minden cikk az eredeti oldalra mutat.</p>';
+  },
+  video() {
+    const vh = P() && P().video_html;
+    if (typeof vh === "string" && vh.length < 400000) return '<div class="vbox"><iframe id="vf" title="Napi magyarázó animáció" sandbox="allow-scripts"></iframe></div>';
+    return '<div class="vbox"><canvas id="vd" width="640" height="360" role="img" aria-label="Pálcikaember-animáció a nap témájáról"></canvas></div><div class="vctl"><button type="button" id="vp">❚❚ Szünet</button><button type="button" id="vr">↺ Újra</button><span id="vt"></span></div>';
+  },
+  method() {
+    return '<div class="method">' +
+      "<div><b>Honnan jönnek a cikkek?</b><p>A figyelt hazai és külföldi hírforrások címei és rövid leírásai. A teljes cikkszöveget nem elemezzük, minden cikk az eredeti oldalra mutat.</p></div>" +
+      "<div><b>Hogyan számoljuk a pontot?</b><p>A hangnemet MI becsüli 0 és 100 között, 50 a semleges. A nemzetközi mutató a legutóbbi legfeljebb " + MAXF + " Magyarországról szóló külföldi cikkből áll, " + MINF + " cikk alatt „kevés adat”.</p></div>" +
+      "<div><b>Mit jelent a kötődés?</b><p>A forrásbesorolás a kormányhoz vagy pártokhoz való kötődést írja le, dátummal és forrással. Nem minőségi ítélet.</p></div>" +
+      "<div><b>Mit nem mutat?</b><p>A kormányról szóló médiahang nem azonos a társadalmi támogatottsággal. A kutatások adatait kézzel visszük fel, módszereik eltérnek.</p></div>" +
+      '</div><p class="note">Automatikus MI-elemzés, hibákat tartalmazhat. A hangulatpont becslés. Az adatok csak címekből és rövid leírásokból készülnek.</p>';
   }
+};
+
+/* ---------- lapok felépítése ---------- */
+let slots = [], laps = [], active = -1, ticking = false;
+function build() {
+  const total = LAPS.length;
+  $("scroller").innerHTML = LAPS.map((lap, i) => '<section class="slot" id="lap-' + (i + 1) + '" aria-label="' + (i + 1) + ". lap: " + esc(lap.short) + '"><article class="lap"><div class="lap-top mono"><span>' + (i + 1) + ". lap · " + esc(lap.short) + "</span><span>Hírfigyelő · " + (i + 1) + " / " + total + "</span></div>" +
+    (lap.type === "overview" ? "" : '<h2 class="lap-title">' + esc(lap.title) + "</h2>" + (lap.kicker ? '<span class="kick mono">' + esc(lap.kicker) + "</span>" : "") + (lap.dek ? '<p class="dek">' + esc(lap.dek) + "</p>" : "")) +
+    '<div class="lap-body" id="lb-' + i + '"><p class="loading">Betöltés…</p></div></article></section>').join("");
+  $("rail").innerHTML = LAPS.map((lap, i) => '<button type="button" data-goto="' + i + '"><span>' + (i + 1) + " · " + esc(lap.short) + '</span><span class="d"></span></button>').join("");
+  $("progress").innerHTML = LAPS.map(() => "<span></span>").join("");
+  slots = Array.prototype.slice.call(document.querySelectorAll("#scroller .slot"));
+  laps = slots.map(s => s.querySelector(".lap"));
+}
+function renderLap(i) {
+  const lap = LAPS[i], box = $("lb-" + i);
+  try { box.innerHTML = R[lap.type](); }
+  catch (e) { box.innerHTML = '<p class="empty">Ezt a lapot nem sikerült megjeleníteni (' + esc(e.message) + ").</p>"; }
+  if (lap.type === "video") startVideo();
+}
+
+/* ---------- görgetés, 3D átmenet ---------- */
+function headH() { return document.querySelector(".top").offsetHeight; }
+function goTo(i, smooth) { const s = slots[i]; if (!s) return; const y = s.getBoundingClientRect().top + window.scrollY - headH(); window.scrollTo({ top: Math.max(0, y), behavior: smooth && !reduced ? "smooth" : "auto" }); }
+function update() {
+  ticking = false;
+  const hh = headH(), h = Math.max(1, window.innerHeight - hh); let idx = 0;
+  for (let i = 0; i < slots.length; i++) {
+    const rc = slots[i].getBoundingClientRect(), topE = rc.top - hh, bot = rc.bottom - hh;
+    let a = topE > 0 ? topE / h : (bot < h ? (bot - h) / h : 0);
+    if (topE <= h * 0.45) idx = i;
+    const lap = laps[i];
+    if (reduced) { lap.style.transform = ""; lap.style.opacity = ""; continue; }
+    a = Math.max(-1.3, Math.min(1.3, a));
+    const abs = Math.abs(a), k = Math.min(1, abs);
+    let rot, ty, origin;
+    if (a >= 0) { rot = -42 * k; ty = -a * h * 0.24; origin = "50% 0%"; } else { rot = 52 * k; ty = abs * h * 0.22; origin = "50% 100%"; }
+    lap.style.transformOrigin = origin;
+    lap.style.transform = "perspective(1600px) translateY(" + ty.toFixed(1) + "px) rotateX(" + rot.toFixed(2) + "deg) scale(" + (1 - 0.1 * k).toFixed(3) + ")";
+    lap.style.opacity = (1 - 0.6 * k).toFixed(3);
+    slots[i].style.zIndex = String(100 - Math.round(abs * 10));
+  }
+  if (idx !== active) setActive(idx);
+}
+function setActive(idx) {
+  active = idx;
+  document.querySelectorAll("#rail button").forEach((b, i) => b.setAttribute("aria-current", i === idx ? "true" : "false"));
+  document.querySelectorAll("#progress span").forEach((s, i) => s.classList.toggle("on", i <= idx));
+  try { history.replaceState(null, "", idx > 0 ? "#lap-" + (idx + 1) : location.pathname + location.search); } catch (e) {}
+}
+window.addEventListener("scroll", () => { if (!ticking) { ticking = true; requestAnimationFrame(update); } }, { passive: true });
+window.addEventListener("resize", () => { goTo(active < 0 ? 0 : active, false); update(); });
+
+/* ---------- kattintások ---------- */
+document.addEventListener("click", e => {
+  const g = e.target.closest("[data-goto]");
+  if (g) { goTo(parseInt(g.getAttribute("data-goto"), 10), true); return; }
+  const s = e.target.closest("[data-set]");
+  if (s) { const k = s.getAttribute("data-set"), v = s.getAttribute("data-val"); st[k] = NUM[k] ? +v : v; rerender(s); return; }
+  const t = e.target.closest("[data-toggle]");
+  if (t) { const k = t.getAttribute("data-toggle"); st[k] = !st[k]; rerender(t); return; }
+  if (e.target.closest("#vp")) { vp = !vp; $("vp").textContent = vp ? "▶ Lejátszás" : "❚❚ Szünet"; return; }
+  if (e.target.closest("#vr")) { vt = 0; return; }
+});
+document.addEventListener("change", e => {
+  const f = e.target.closest("[data-filt]");
+  if (f) { st[f.getAttribute("data-filt")] = f.value; rerender(f, "f-" + f.getAttribute("data-filt")); }
+});
+function rerender(el, focusId) {
+  const body = el.closest(".lap-body"); if (!body) return;
+  const i = parseInt(body.id.slice(3), 10), y = window.scrollY;
+  renderLap(i);
+  window.scrollTo(0, y);
+  if (focusId && $(focusId)) $(focusId).focus();
+  update();
+}
+
+/* ---------- kiadás, menü ---------- */
+let dateStr = "";
+try { dateStr = new Intl.DateTimeFormat("hu-HU", { month: "long", day: "numeric" }).format(new Date()); } catch (e) {}
+function setEdition(day, save) {
+  document.documentElement.classList.toggle("nappali", day);
+  $("t-night").setAttribute("aria-pressed", day ? "false" : "true");
+  $("t-day").setAttribute("aria-pressed", day ? "true" : "false");
+  $("edition").textContent = (day ? "Nappali kiadás" : "Éjszakai kiadás") + " · " + dateStr;
+  if (save) store.set("figyelo-kiadas", day ? "nappali" : "ejszakai");
+}
+$("t-night").addEventListener("click", () => setEdition(false, true));
+$("t-day").addEventListener("click", () => setEdition(true, true));
+setEdition(store.get("figyelo-kiadas") === "nappali", false);
+function closeMenu() { $("menu-list").hidden = true; $("menu-btn").setAttribute("aria-expanded", "false"); }
+$("menu-btn").addEventListener("click", e => { e.stopPropagation(); const open = $("menu-list").hidden; $("menu-list").hidden = !open; $("menu-btn").setAttribute("aria-expanded", open ? "true" : "false"); });
+document.addEventListener("click", e => { if (!$("menu").contains(e.target)) closeMenu(); });
+document.addEventListener("keydown", e => { if (e.key === "Escape") closeMenu(); });
+
+/* ---------- hírszalag ---------- */
+let TT = [], tkI = 0, tkPaused = reduced;
+function tickInit() {
+  const m = {};
+  recent(D.articles, 24).forEach(a => arr(a.topics).forEach(t => { (m[t] = m[t] || { src: new Set(), s: [] }).src.add(a.source); if (a.sentiment != null) m[t].s.push(a.sentiment); }));
+  TT = Object.entries(m).map(([t, o]) => ({ t, n: o.src.size, s: o.s.length ? avg(o.s) : null })).sort((a, b) => b.n - a.n).slice(0, 8);
+}
+function tkShow() {
+  const el = $("tk-txt");
+  if (!TT.length) { el.textContent = "Nincs elég friss adat."; return; }
+  const L = TT[tkI % TT.length]; el.style.opacity = "0";
+  setTimeout(() => { el.innerHTML = "<b>" + esc(L.t.charAt(0).toUpperCase() + L.t.slice(1)) + "</b> – " + L.n + " forrás – " + chip(L.s); el.style.opacity = "1"; }, reduced ? 0 : 250);
+}
+setInterval(() => { if (!tkPaused && TT.length) { tkI++; tkShow(); } }, 6000);
+$("tk-btn").addEventListener("click", () => {
+  tkPaused = !tkPaused;
+  $("tk-btn").setAttribute("aria-label", tkPaused ? "Hírszalag indítása" : "Hírszalag megállítása");
+  $("tk-ico").innerHTML = tkPaused ? '<path d="M8 5v14l11-7z"/>' : '<rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/>';
+});
+
+/* ---------- napi videó ---------- */
+let vp = false, vt = 0, last = 0, vloop = false;
+const DEF = [{ mp: 4, felirat: "Egy téma, sok hang", alakok: [{ poz: "setal", x: .3 }, { poz: "setal", x: .65 }] }, { mp: 4, felirat: "32 forrás figyel", alakok: [{ poz: "mutat", x: .25 }, { poz: "integet", x: .7 }] }, { mp: 4, felirat: "A hangnem eltér", alakok: [{ poz: "vitatkozik", x: .3 }, { poz: "vitatkozik", x: .7 }] }, { mp: 4, felirat: "Te döntesz a végén", alakok: [{ poz: "unnepel", x: .5 }] }];
+function startVideo() {
+  const vh = P() && P().video_html, f = $("vf");
+  if (f && typeof vh === "string") {
+    const msg = () => { try { f.contentWindow.postMessage({ hfTheme: "dark", bg: "#1A2230", fg: "#EEE9DF", mu: "#A3A9B4", line: "rgba(255,255,255,0.14)", btn: "#7DBBFF", btnfg: "#0A0E14" }, "*"); } catch (e) {} };
+    f.addEventListener("load", msg); f.srcdoc = vh; return;
+  }
+  const cv = $("vd"); if (!cv) return;
+  const cx = cv.getContext("2d");
+  const scenes = () => { const v = P() && P().video; return v && arr(v.jelenetek).length ? arr(v.jelenetek).slice(0, 8) : DEF; };
+  const limb = (x, y, a, l) => { cx.beginPath(); cx.moveTo(x, y); cx.lineTo(x + Math.sin(a) * l, y + Math.cos(a) * l); cx.stroke(); };
+  const fig = (x, p, t) => {
+    let la = .3, ra = -.3, ll = .15, rl = -.15, j = 0;
+    if (p === "setal") { const w = Math.sin(t * 6); ll = w * .5; rl = -w * .5; la = -w * .5; ra = w * .5; } else if (p === "mutat") { ra = -1.9; la = .2; } else if (p === "integet") { ra = -2.6 + Math.sin(t * 9) * .4; } else if (p === "vitatkozik") { la = -2 + Math.sin(t * 8) * .6; ra = 2 - Math.sin(t * 8 + 1) * .6; } else if (p === "unnepel") { la = -2.7; ra = 2.7; j = Math.abs(Math.sin(t * 5)) * 20; }
+    const gy = 280 - j, hip = gy - 48, neck = hip - 50;
+    cx.beginPath(); cx.arc(x, neck - 14, 14, 0, 7); cx.stroke(); cx.beginPath(); cx.moveTo(x, neck); cx.lineTo(x, hip); cx.stroke();
+    limb(x, hip, ll, 48); limb(x, hip, rl, 48); limb(x, neck + 8, la, 36); limb(x, neck + 8, ra, 36);
+  };
+  const draw = () => {
+    const sc = scenes(), tot = sc.reduce((s, j) => s + (+j.mp || 4), 0), t2 = vt % tot; let acc = 0, cur = sc[0];
+    for (const j of sc) { if (t2 < acc + (+j.mp || 4)) { cur = j; break; } acc += +j.mp || 4; }
+    cx.fillStyle = "#f2efe6"; cx.fillRect(0, 0, 640, 360); cx.strokeStyle = "#2a2a2a"; cx.fillStyle = "#2a2a2a"; cx.lineWidth = 4; cx.lineCap = "round";
+    cx.beginPath(); cx.moveTo(30, 282); cx.lineTo(610, 282); cx.stroke();
+    arr(cur.alakok).slice(0, 4).forEach(a => fig(Math.max(.1, Math.min(.9, +a.x || .5)) * 640, String(a.poz), vt));
+    let fs = 24; cx.font = "600 " + fs + "px Inter, system-ui, sans-serif"; const tx = String(cur.felirat || "").slice(0, 70);
+    while (cx.measureText(tx).width > 600 && fs > 12) { fs--; cx.font = "600 " + fs + "px Inter, system-ui, sans-serif"; }
+    cx.textAlign = "center"; cx.fillText(tx, 320, 60);
+    cx.fillStyle = "#2F6DB5"; cx.fillRect(0, 352, 640 * (t2 / tot), 8);
+    const vtx = $("vt"); if (vtx) vtx.textContent = t2.toFixed(1) + " / " + tot + " mp";
+  };
+  if (vloop) return; vloop = true;
+  const loop = ts => { if ($("vd")) { if (!vp) vt += Math.min(.1, (ts - last) / 1000); last = ts; draw(); } requestAnimationFrame(loop); };
+  requestAnimationFrame(ts => { last = ts; loop(ts); });
+}
+
+/* ---------- indítás ---------- */
+async function start() {
+  const m = /^#lap-(\d+)$/.exec(location.hash || "");
+  build();
+  document.documentElement.classList.add("snap");
+  update();
+  try { D = await live(); }
+  catch (e) {
+    const b = $("err"); b.hidden = false; b.textContent = "Az adatok betöltése nem sikerült: " + e.message + ". Próbáld újra néhány perc múlva.";
+    D = { articles: [], fh: [], src: {}, govs: [], polls: [], stats: [], pack: null };
+  }
+  LAPS.forEach((_, i) => renderLap(i));
+  tickInit(); tkShow();
+  if (m) goTo(Math.max(0, Math.min(LAPS.length - 1, parseInt(m[1], 10) - 1)), false);
+  update();
+}
+start();
 })();
 </script>
+
 <script>
-/* Neon hullámok a háttérben (a prototípusból) */
+/* Neon hullámok a háttérben: a görgetés finoman elmozdítja a fázisukat */
 (function () {
   "use strict";
   var cv = document.getElementById("waves");
@@ -260,8 +777,7 @@ div.cover { opacity: 0.6; }
     ctx.globalCompositeOperation = "source-over";
   }
   function loop() { var d = target - phase; if (Math.abs(d) < 0.0005) { phase = target; draw(); running = false; return; } phase += d * 0.07; draw(); window.requestAnimationFrame(loop); }
-  function nudge() { target = (window.scrollX + window.scrollY) * 0.0022; if (reduced) { phase = target; draw(); return; } if (!running) { running = true; window.requestAnimationFrame(loop); } }
-  window.addEventListener("scroll", nudge, { passive: true });
+  window.addEventListener("scroll", function () { target = window.scrollY * 0.0022; if (reduced) { phase = target; draw(); return; } if (!running) { running = true; window.requestAnimationFrame(loop); } }, { passive: true });
   window.addEventListener("resize", resize);
   new MutationObserver(function () { draw(); }).observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
   resize();
