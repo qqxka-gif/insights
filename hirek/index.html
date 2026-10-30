@@ -226,7 +226,7 @@ main { display: block; position: relative; z-index: 1; isolation: isolate; paddi
 .method b { font-family: var(--font-display); font-size: 17px; font-weight: 600; }
 .method p { margin: 0; font-size: 14px; color: var(--muted); }
 .resume { display: inline-flex; align-items: center; gap: 10px; min-height: 40px; padding: 0 16px; border-radius: 999px; cursor: pointer; border: 1px solid var(--hair); background: var(--pill); color: var(--text); font-size: 13px; font-weight: 500; align-self: flex-start; }
-.err { position: relative; z-index: 2; margin: 12px auto 0; width: min(900px, calc(100% - 24px)); box-sizing: border-box; padding: 10px 14px; border-radius: 12px; background: color-mix(in srgb, var(--neg) 22%, var(--page-a)); border: 1px solid var(--neg); font-size: 14px; }
+.err { position: fixed; z-index: 250; top: calc(var(--top) + 12px); left: 50%; transform: translateX(-50%); margin: 0; width: min(900px, calc(100% - 24px)); box-shadow: var(--shadow); box-sizing: border-box; padding: 10px 14px; border-radius: 12px; background: color-mix(in srgb, var(--neg) 22%, var(--page-a)); border: 1px solid var(--neg); font-size: 14px; }
 .loading { color: var(--muted); font-size: 14px; padding: 24px 0; }
 
 /* Hírszalag */
@@ -387,11 +387,11 @@ function chart100(series, labels, opt) {
   series.forEach((se, si) => {
     const col = se[1], d = se[2]; let seg = [];
     const flush = () => { if (seg.length > 1) s += '<polyline fill="none" stroke="' + col + '" stroke-width="' + (si === 0 ? 3 : 2) + '" stroke-linecap="round" stroke-linejoin="round" points="' + seg.join(" ") + '"/>'; seg = []; };
-    d.forEach((v, i) => { if (v == null) flush(); else seg.push(x(i).toFixed(1) + "," + y(v).toFixed(1)); });
+    d.forEach((v, i) => { if (v == null) { if (!opt.spanGaps) flush(); } else seg.push(x(i).toFixed(1) + "," + y(v).toFixed(1)); });
     flush();
     d.forEach((v, i) => {
       if (v == null) return;
-      const lone = d[i - 1] == null && d[i + 1] == null;
+      const lone = !opt.spanGaps && d[i - 1] == null && d[i + 1] == null;
       if (lone || n <= 40) s += '<circle cx="' + x(i).toFixed(1) + '" cy="' + y(v).toFixed(1) + '" r="' + (lone ? 4.5 : 2.4) + '" fill="' + col + '"><title>' + esc(se[0] + ", " + labels[i] + ": " + v + (opt.unit || "")) + "</title></circle>";
       if (lone) s += '<text x="' + x(i).toFixed(1) + '" y="' + (y(v) - 10).toFixed(1) + '" text-anchor="middle" fill="var(--panel-fg)" font-size="11" font-family="IBM Plex Mono, monospace">' + v + "</text>";
     });
@@ -514,7 +514,7 @@ const R = {
     const series = TS[st.tg].map(([sc, l], i) => { const m = {}; D.stats.filter(s => s.scope === sc).forEach(s => m[s.day] = s); return [l, PAL[i % PAL.length], days.map(d => m[d] && m[d].avg != null && m[d].n >= 3 ? Math.round((m[d].avg + 1) * 50) : null)]; });
     const title = st.tg === "intl" ? "A külföldi sajtó hangja Magyarországról, naponta" : "Hazai médiahang a kormányról, naponta";
     return '<div class="tabs" style="justify-content:space-between">' + tabsHTML("tg", [["intl", "Nemzetközi"], ["dom", "Hazai médiahang"]]) + tabsHTML("tr", [[7, "7 nap"], [30, "30 nap"], [90, "90 nap"]]) + "</div>" +
-      panel(title, "utolsó " + st.tr + " nap · élő", chart100(series, days.map(d => d.slice(5)), { mid: 50, label: title }) + legend(series.map(s => [s[0], s[1]]))) +
+      panel(title, "utolsó " + st.tr + " nap · élő", chart100(series, days.map(d => d.slice(5)), { mid: 50, label: title, spanGaps: true }) + legend(series.map(s => [s[0], s[1]]))) +
       '<p class="note">Napi pont csak ott van, ahol legalább 3 cikk volt. A külföldi napi pontok ezért ritkábbak.</p>';
   },
   map() {
@@ -529,11 +529,11 @@ const R = {
     let out = tabsHTML("pv", [["chart", "Grafikon"], ["list", "Felmérések listája"]]);
     if (!D.polls.length) return out + '<p class="empty">Még nincs felvitt kutatási adat.</p>';
     if (st.pv === "chart") {
-      const days = [...new Set(D.polls.map(p => p.day))].sort().slice(-24), pt = [...new Set(D.polls.map(p => p.party))];
+      const ORD = Object.keys(PARTY), days = [...new Set(D.polls.map(p => p.day))].sort().slice(-24), pt = [...new Set(D.polls.map(p => p.party))].sort((a, b) => (ORD.indexOf(a) + 1 || 99) - (ORD.indexOf(b) + 1 || 99));
       const series = pt.map((p, i) => [p, PARTY[p] || PAL[i % PAL.length], days.map(d => { const v = D.polls.filter(x => x.party === p && x.day === d).map(x => x.pct); return v.length ? +avg(v).toFixed(1) : null; })]);
       let mx = 0; series.forEach(s => s[2].forEach(v => { if (v != null && v > mx) mx = v; }));
       const max = Math.max(20, Math.ceil(mx / 20) * 20), ticks = []; for (let t = 0; t <= max; t += 20) ticks.push(t);
-      return out + panel("Pártok támogatottsága (%)", "utolsó " + days.length + " felmérési nap · élő", chart100(series, days.map(d => d.slice(5)), { max, ticks, unit: "%", label: "Pártok támogatottsága" }) + legend(series.map(s => [s[0], s[1]])));
+      return out + panel("Pártok támogatottsága (%)", "utolsó " + days.length + " felmérési nap · élő", chart100(series, days.map(d => d.slice(5)), { max, ticks, unit: "%", label: "Pártok támogatottsága", spanGaps: true }) + legend(series.map(s => [s[0], s[1]])));
     }
     const g = {};
     D.polls.forEach(p => { const k = p.day + "|" + p.institute, x = g[k] || (g[k] = { day: p.day, inst: p.institute, urls: new Set() }); if (p.source_url) x.urls.add(p.source_url); });
