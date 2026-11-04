@@ -413,7 +413,7 @@ const panel = (title, src, inner) => '<div class="panel"><div class="panel-head"
 const tabsHTML = (k, items, extra) => '<div class="tabs" role="group">' + items.map(it => '<button type="button" data-set="' + k + '" data-val="' + esc(it[0]) + '" aria-pressed="' + (String(st[k]) === String(it[0])) + '"' + (it[2] ? ' class="dim"' : "") + ">" + esc(it[1]) + "</button>").join("") + (extra || "") + "</div>";
 
 /* ---------- állapot ---------- */
-const st = { tlk: "hu", tAll: false, nt: 0, rc: "HU", tg: "intl", tr: 30, mm: "hu", pv: "chart", fc: "", fb: "", fs: "" };
+const st = { tlk: "hu", tAll: false, nt: 0, rc: "HU", tg: "dom", tr: 30, mm: "hu", pv: "chart", fc: "", fb: "", fs: "" };
 const NUM = { tr: 1, nt: 1 };
 const MAXF = 30, MINF = 10;
 
@@ -512,7 +512,7 @@ const R = {
     const TS = { intl: [["intl", "Összes"], ["intl_USA", "USA"], ["intl_UK", "UK"], ["intl_DE", "DE"], ["intl_FR", "FR"]], dom: [["dom", "Összes"], ["dom_fidesz_kozeli", "Fidesz-közeli"], ["dom_fuggetlen", "Független"], ["dom_tisza_kozeli", "Tisza-közeli"]] };
     const days = Array.from({ length: st.tr }, (_, i) => new Date(now - (st.tr - 1 - i) * 24 * H).toISOString().slice(0, 10));
     const series = TS[st.tg].map(([sc, l], i) => { const m = {}; D.stats.filter(s => s.scope === sc).forEach(s => m[s.day] = s); return [l, PAL[i % PAL.length], days.map(d => m[d] && m[d].avg != null && m[d].n >= 3 ? Math.round((m[d].avg + 1) * 50) : null)]; });
-    const title = st.tg === "dom" ? "A külföldi sajtó hangja Magyarországról, naponta" : "Hazai médiahang a kormányról, naponta";
+    const title = st.tg === "int1" ? "A külföldi sajtó hangja Magyarországról, naponta" : "Hazai médiahang a kormányról, naponta";
     return '<div class="tabs" style="justify-content:space-between">' + tabsHTML("tg", [["intl", "Nemzetközi"], ["dom", "Hazai médiahang"]]) + tabsHTML("tr", [[7, "7 nap"], [30, "30 nap"], [90, "90 nap"]]) + "</div>" +
       panel(title, "utolsó " + st.tr + " nap · élő", chart100(series, days.map(d => d.slice(5)), { mid: 50, label: title, spanGaps: true }) + legend(series.map(s => [s[0], s[1]]))) +
       '<p class="note">Napi pont csak ott van, ahol legalább 3 cikk volt. A külföldi napi pontok ezért ritkábbak.</p>';
