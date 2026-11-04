@@ -281,6 +281,8 @@ main { display: block; position: relative; z-index: 1; isolation: isolate; paddi
 .slegend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12px; color: var(--muted); }
 .slegend span { display: inline-flex; align-items: center; gap: 6px; }
 .slegend i { width: 10px; height: 10px; border-radius: 2px; display: block; }
+.rxleg { gap: 8px 18px; }
+.rxleg .rg { font-size: 18px; line-height: 1; }
 .tone-row details summary, .pg details summary { cursor: pointer; color: var(--acc); font-size: 12px; font-weight: 500; }
 .tone-row details p { margin: 6px 0 0; font-size: 14px; color: var(--muted); max-width: 70ch; }
 .post { display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--hair); text-align: left; width: 100%; background: none; border-left: 0; border-right: 0; border-top: 0; cursor: pointer; color: inherit; font: inherit; }
@@ -525,7 +527,7 @@ const R = {
   reactions() {
     const types = Object.keys(RX);
     const rows = D.accounts.filter(a => arr(a.reactions).length).map(a => { const tot = a.reactions.reduce((s, r) => s + r.n, 0) || 1; return '<div class="tone-row"><div class="hd"><span class="nm" style="font-size:15px">' + esc(a.name) + '</span><span class="note">' + rxChips(a.reactions.slice(0, 4)) + '</span></div><div class="sbar">' + types.map(t => { const r = a.reactions.find(x => x.type === t); return r ? '<div style="width:' + (r.n / tot * 100).toFixed(2) + "%;background:" + RX[t][2] + '" title="' + esc(RX[t][0] + ": " + r.n) + '"></div>' : ""; }).join("") + "</div></div>"; }).join("");
-    return panel("Reakciók megoszlása", "elmúlt " + (D.window_days || 15) + " nap · élő", rows ? '<div style="color:var(--panel-fg)">' + rows + "</div>" + '<div class="slegend" style="margin-top:10px">' + types.map(t => '<span><i style="background:' + RX[t][2] + '"></i>' + RX[t][0] + "</span>").join("") + "</div>" : '<p class="empty">Nincs reakcióadat.</p>');
+    return panel("Reakciók megoszlása", "elmúlt " + (D.window_days || 15) + " nap · élő", rows ? '<div style="color:var(--panel-fg)">' + rows + "</div>" + '<div class="slegend rxleg" style="margin-top:10px">' + types.map(t => '<span title="' + esc(RX[t][0]) + '"><i style="background:' + RX[t][2] + '"></i><span class="rg" role="img" aria-label="' + esc(RX[t][0]) + '">' + RX[t][1] + "</span></span>").join("") + "</div>" : '<p class="empty">Nincs reakcióadat.</p>');
   },
   comments() {
     const key = st.ctab === "neg" ? "top_neg" : "top_pos";
