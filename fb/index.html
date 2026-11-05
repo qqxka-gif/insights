@@ -88,8 +88,6 @@
 .cmp-hd { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; font-size: 13px; }
 .cmp-nm { font-weight: 600; }
 .cmp-nm small { font-weight: 400; color: var(--panel-muted); }
-.cmp-eng { font-family: var(--font-mono); font-size: 11px; color: var(--panel-muted); font-variant-numeric: tabular-nums; }
-.cmp-eng b { font-family: var(--font-display); font-size: 15px; color: var(--panel-fg); }
 .panel .note { color: var(--panel-muted); margin-top: 8px; }
 .scat text { font-family: "IBM Plex Mono", monospace; }
 /* Poszt-részletező */
@@ -249,8 +247,8 @@ const R = {
     const fmtD = (v, d) => v == null ? "–" : v.toLocaleString("hu-HU", { maximumFractionDigits: d, minimumFractionDigits: d });
     const fol = a => a.followers ? fmtN(a.followers) + " követő" : "követőszám nélkül";
     const withTone = D.accounts.filter(a => a.tone && a.tone.n).sort((a, b) => (b.tone.crit - a.tone.crit) || (a.tone.sup - b.tone.sup));
-    const rows = withTone.map(a => { const t = a.tone, e = eng(a);
-      return '<div class="cmp-row' + (t.n < MINN ? " low" : "") + '"><div class="cmp-hd"><span class="cmp-nm">' + esc(a.name) + ' <small>· ' + fmtN(t.n) + " komment" + (t.n < MINN ? " · kevés adat" : "") + '</small></span><span class="cmp-eng">' + (e != null ? "<b>" + fmtD(e, 1) + "</b> / 1000 követő" : "nincs követőszám") + "</span></div>" +
+    const rows = withTone.map(a => { const t = a.tone;
+      return '<div class="cmp-row' + (t.n < MINN ? " low" : "") + '"><div class="cmp-hd"><span class="cmp-nm">' + esc(a.name) + ' <small>· ' + fmtN(t.n) + " komment" + (t.n < MINN ? " · kevés adat" : "") + '</small></span></div>' +
         '<div class="sbar" role="img" aria-label="' + esc(a.name) + ": támogató " + t.sup + "%, semleges " + t.neu + "%, kritikus " + t.crit + '%"><div style="width:' + t.sup + "%;background:" + TONE_COL.sup + '"></div><div style="width:' + t.neu + "%;background:" + TONE_COL.neu + '"></div><div style="width:' + t.crit + "%;background:" + TONE_COL.crit + '"></div></div></div>'; }).join("");
     const noTone = D.accounts.filter(a => !(a.tone && a.tone.n)).map(a => a.name);
     const p1 = panel("Kommenthangulat oldalanként", "elmúlt " + days + " nap · a legkritikusabb felül",
