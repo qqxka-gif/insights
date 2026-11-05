@@ -7,255 +7,13 @@
 <meta name="description" content="Kerületi Facebook-figyelő: ki mit posztol, és hogyan reagálnak rá a kommentelők – a Figyelő rovata.">
 <meta name="robots" content="noindex">
 <script>try{if(localStorage.getItem("figyelo-kiadas")==="nappali")document.documentElement.classList.add("nappali")}catch(e){}</script>
-<script>window.addEventListener("error",function(e){var b=document.getElementById("err");if(b){b.hidden=false;b.textContent="Hiba az oldalon: "+(e.message||"ismeretlen")+". Frissítsd az oldalt (Ctrl+F5), és küldd el ezt az üzenetet."}})</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,400;1,9..144,600&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../assets/glossy.css">
 <style>
-/* Facebook-figyelő – glossy „digitális újság”: teljes képernyős lapok görgetéssel, 3D átmenettel (figyelo-prototipus.html alapján) */
-:root {
-  color-scheme: dark;
-  --ground: #0A0E14; --ground-2: #141C28; --page-a: #161E2A; --page-b: #0F141C;
-  --text: #EEE9DF; --muted: #A3A9B4; --hair: rgba(238, 233, 223, 0.14); --rule: #EEE9DF;
-  --bar: rgba(10, 14, 20, 0.78); --pill: rgba(255, 255, 255, 0.05);
-  --pill-on: linear-gradient(180deg, #2A3546, #1C2533); --pill-on-fg: #FFFFFF;
-  --halo: rgba(111, 179, 255, 0.10); --sheen: rgba(255, 255, 255, 0.07); --edge: rgba(160, 205, 255, 0.6);
-  --shadow: 0 30px 70px rgba(0, 0, 0, 0.62), inset 0 1px 0 rgba(255, 255, 255, 0.08);
-  --lift: 0 40px 80px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.12);
-  --track: rgba(238, 233, 223, 0.10); --dot-off: #4A5260;
-  --hir: #7DBBFF; --fb: #F2B35B; --koz: #7FD1A6;
-  --glow-hir: rgba(111, 179, 255, 0.28); --glow-fb: rgba(242, 179, 91, 0.24); --glow-koz: rgba(127, 209, 166, 0.22);
-  --panel-a: #1A2230; --panel-b: #0D121A; --panel-fg: #EEE9DF; --panel-muted: #A3A9B4; --panel-grid: rgba(255, 255, 255, 0.08);
-  --c-hir: #6FB3FF; --c-fb: #F2B35B; --c-2: #C9CED6;
-  --pos: #5B9BE0; --neu: #8C929C; --neg: #E8913F;
-  --font-display: "Fraunces", Georgia, "Times New Roman", serif;
-  --font-body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
-  --head-h: 64px; --top: calc(var(--head-h) + env(safe-area-inset-top, 0px));
-  --acc: var(--fb); --chart: var(--c-fb); --aglow: var(--glow-fb);
-}
-html.nappali {
-  color-scheme: light;
-  --ground: #D8D1C3; --ground-2: #EDE8DD; --page-a: #F9F6EF; --page-b: #EFE9DC;
-  --text: #15171C; --muted: #4A4E57; --hair: rgba(21, 23, 28, 0.18); --rule: #15171C;
-  --bar: rgba(237, 232, 221, 0.88); --pill: rgba(21, 23, 28, 0.05);
-  --pill-on: linear-gradient(180deg, #FFFFFF, #F1ECE1); --pill-on-fg: #15171C;
-  --halo: rgba(255, 255, 255, 0.55); --sheen: rgba(255, 255, 255, 0.7); --edge: rgba(255, 255, 255, 0.95);
-  --shadow: 0 30px 60px rgba(60, 50, 30, 0.28), 0 6px 16px rgba(60, 50, 30, 0.16), inset 0 1px 0 #FFFFFF;
-  --lift: 0 36px 70px rgba(60, 50, 30, 0.34), inset 0 1px 0 #FFFFFF;
-  --track: rgba(21, 23, 28, 0.08); --dot-off: #B5AE9F;
-  --hir: #1F5C99; --fb: #94531A; --koz: #2E6B4F;
-  --glow-hir: rgba(31, 92, 153, 0.18); --glow-fb: rgba(148, 83, 26, 0.16); --glow-koz: rgba(46, 107, 79, 0.16);
-  --pos: #2F6DB5; --neu: #5E6470; --neg: #B5602A;
-}
-[hidden] { display: none !important; }
-html.snap { scroll-snap-type: y proximity; scroll-padding-top: var(--top); }
-body {
-  margin: 0; min-height: 100vh;
-  background: radial-gradient(1100px 700px at 50% 40%, var(--ground-2) 0%, var(--ground) 72%) fixed;
-  background-color: var(--ground); color: var(--text);
-  font-family: var(--font-body); font-size: 15px; line-height: 1.5; -webkit-font-smoothing: antialiased;
-  transition: background-color 0.4s ease, color 0.4s ease;
-}
-body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 30; background: var(--bar); }
-button, select { font: inherit; color: inherit; }
-a { color: var(--acc); }
-:focus-visible { outline: 2px solid var(--hir); outline-offset: 3px; border-radius: 6px; }
-.mono { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.13em; text-transform: uppercase; }
-.muted { color: var(--muted); }
-
-/* ---------- Fejléc ---------- */
-.top { position: fixed; top: 0; left: 0; right: 0; z-index: 300; padding-top: env(safe-area-inset-top, 0px); background: var(--bar); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border-bottom: 1px solid var(--hair); }
-.top-in { height: var(--head-h); display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
-@media (min-width: 760px) { .top-in { padding-left: 32px; padding-right: 32px; } }
-.brand { display: flex; align-items: center; gap: 16px; min-width: 0; }
-.logo { font-family: var(--font-display); font-size: 28px; font-weight: 600; letter-spacing: -0.01em; line-height: 1; text-decoration: none; color: var(--text); }
-.edition { white-space: nowrap; color: var(--muted); }
-.sep { width: 1px; height: 26px; background: var(--hair); }
-.menu { position: relative; }
-.menu-btn { display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border-radius: 10px; cursor: pointer; border: 1px solid var(--hair); background: var(--pill); color: var(--fb); font-family: var(--font-display); font-style: italic; font-size: 18px; font-weight: 600; }
-.menu-list { position: absolute; top: calc(100% + 8px); left: 0; min-width: 230px; margin: 0; padding: 6px; list-style: none; background: linear-gradient(180deg, var(--page-a), var(--page-b)); border: 1px solid var(--hair); border-radius: 12px; box-shadow: var(--shadow); }
-.menu-list a, .menu-list span.dis { width: 100%; box-sizing: border-box; min-height: 44px; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 12px; border-radius: 8px; text-decoration: none; color: var(--text); font-size: 14px; }
-.menu-list a:hover { background: var(--pill); }
-.menu-list span.dis { opacity: 0.55; }
-.menu-list .dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
-.menu-list .lbl { display: flex; align-items: center; gap: 10px; }
-.toggle { display: flex; padding: 4px; gap: 4px; border-radius: 999px; background: var(--pill); border: 1px solid var(--hair); flex-shrink: 0; }
-.toggle button { display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 14px; border: 0; border-radius: 999px; cursor: pointer; background: transparent; color: var(--muted); font-size: 13px; font-weight: 500; }
-.toggle button[aria-pressed="true"] { background: var(--pill-on); color: var(--pill-on-fg); box-shadow: inset 0 1px 0 rgba(255,255,255,0.15), 0 0 12px var(--glow-hir); }
-.toggle svg { width: 15px; height: 15px; }
-@media (max-width: 640px) { .edition, .sep { display: none; } .toggle .t-lbl { display: none; } .toggle button { width: 36px; padding: 0; justify-content: center; } .logo { font-size: 23px; } .menu-btn { font-size: 16px; padding: 0 10px; } }
-
-/* ---------- Lapok ---------- */
-.waves { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; display: block; }
-.halo { position: fixed; left: 50%; top: 55%; width: 900px; height: 560px; transform: translate(-50%, -50%); border-radius: 50%; background: radial-gradient(closest-side, var(--glow-fb), transparent); opacity: 0.5; pointer-events: none; }
-main { display: block; position: relative; z-index: 1; isolation: isolate; padding-top: var(--top); }
-.scroller { position: relative; overflow-x: clip; padding-bottom: 80px; }
-.slot { min-height: calc(100vh - var(--top)); min-height: calc(100svh - var(--top)); box-sizing: border-box; scroll-snap-align: start; display: flex; align-items: center; justify-content: center; padding-block: 22px; padding-left: max(12px, env(safe-area-inset-left, 0px)); padding-right: max(12px, env(safe-area-inset-right, 0px)); position: relative; }
-@media (min-width: 1100px) { .slot { padding-left: 200px; padding-right: 200px; } }
-@media (max-width: 759px) { .slot { padding-top: 30px; } }
-.lap { position: relative; width: min(900px, 100%); box-sizing: border-box; padding: 26px 32px 28px; border-radius: 16px; display: flex; flex-direction: column; gap: 14px; background: linear-gradient(180deg, var(--page-a), var(--page-b)); border: 1px solid var(--hair); box-shadow: var(--shadow), 0 0 90px var(--aglow); will-change: transform, opacity; transform-origin: 50% 0%; }
-@media (max-width: 640px) { .lap { padding: 20px 16px 22px; } }
-.lap::before { content: ""; position: absolute; inset: 0; pointer-events: none; border-radius: inherit; background: linear-gradient(165deg, var(--sheen) 0%, transparent 32%); }
-.lap::after { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 1px; pointer-events: none; background: linear-gradient(90deg, transparent, var(--edge), transparent); }
-.lap > *, .lap-body > * { position: relative; }
-.lap-body { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
-.lap-top { display: flex; justify-content: space-between; gap: 12px; color: var(--muted); font-size: 10px; }
-.lap-title { margin: 0; font-family: var(--font-display); font-size: clamp(30px, 4.2vw, 44px); font-weight: 600; line-height: 1.02; letter-spacing: -0.01em; padding-bottom: 10px; border-bottom: 3px solid var(--rule); text-wrap: balance; }
-.lap-title.rovatnev { font-style: italic; color: var(--acc); font-size: clamp(38px, 5.4vw, 56px); }
-.kick { color: var(--acc); font-size: 10px; }
-.lead { margin: 0; font-family: var(--font-display); font-size: clamp(21px, 2.4vw, 26px); line-height: 1.14; font-weight: 600; text-wrap: balance; }
-.dek { margin: 0; color: var(--muted); font-size: 14px; max-width: 62ch; }
-.grid2 { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 26px; }
-.grid2 > * { min-width: 0; }
-@media (max-width: 759px) { .grid2 { grid-template-columns: minmax(0, 1fr); } }
-.col { display: flex; flex-direction: column; gap: 10px; }
-.side { padding-left: 22px; border-left: 1px solid var(--hair); }
-@media (max-width: 759px) { .side { padding-left: 0; border-left: 0; padding-top: 14px; border-top: 1px solid var(--hair); } }
-.h3 { margin: 0; font-family: var(--font-display); font-size: 19px; font-weight: 600; }
-
-.panel { position: relative; border-radius: 12px; padding: 14px 16px 12px; background: linear-gradient(160deg, var(--panel-a), var(--panel-b)); border: 1px solid rgba(255,255,255,0.07); box-shadow: inset 0 1px 0 rgba(255,255,255,0.08); color: var(--panel-fg); overflow: hidden; }
-.panel a { color: #9FCBFF; }
-.panel-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 8px; flex-wrap: wrap; }
-.panel-head b { font-size: 13px; font-weight: 600; }
-.panel .src { font-family: var(--font-mono); font-size: 10px; color: var(--panel-muted); }
-.panel svg { display: block; width: 100%; height: auto; }
-.legend { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 12px; color: var(--panel-muted); margin-top: 8px; }
-.legend span { display: flex; align-items: center; gap: 7px; }
-.legend i { width: 14px; height: 3px; border-radius: 2px; display: block; }
-
-.toc { display: flex; flex-direction: column; }
-.toc button { display: grid; grid-template-columns: 28px minmax(0, 1fr) 14px; align-items: center; gap: 8px; min-height: 42px; padding: 0; border: 0; border-bottom: 1px solid var(--hair); background: none; cursor: pointer; text-align: left; font-size: 13.5px; }
-.toc button:hover .t-name { color: var(--acc); }
-.toc .n { font-family: var(--font-display); font-size: 18px; font-weight: 600; color: var(--acc); }
-.toc svg { width: 12px; height: 12px; }
-.note { font-size: 12px; color: var(--muted); margin: 0; }
-.snap-note { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
-
-.gauges { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
-@media (max-width: 640px) { .gauges { grid-template-columns: minmax(0, 1fr); } }
-.gauge { display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; }
-.gauge h3 { margin: 0; align-self: stretch; text-align: left; font-family: var(--font-display); font-size: 17px; font-weight: 600; color: var(--panel-fg); }
-.gauge svg { width: min(240px, 100%); height: auto; }
-.gauge .gv { font-family: var(--font-display); font-size: 44px; font-weight: 600; line-height: 1; margin-top: 2px; }
-.gauge .gv small { font-family: var(--font-body); font-size: 13px; color: var(--panel-muted); font-weight: 400; }
-.minis { display: grid; grid-template-columns: repeat(auto-fit, minmax(84px, 1fr)); gap: 8px; align-self: stretch; margin-top: 6px; }
-.mini { padding: 8px 10px; border-radius: 9px; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.03); text-align: left; }
-.mini b { display: block; font-family: var(--font-display); font-size: 19px; font-weight: 600; line-height: 1.1; font-variant-numeric: tabular-nums; }
-.mini span { font-size: 11px; color: var(--panel-muted); }
-.gauge p { margin: 4px 0 0; font-size: 12px; color: var(--panel-muted); text-align: left; align-self: stretch; }
-.gauge details { align-self: stretch; text-align: left; font-size: 13px; }
-.gauge summary { cursor: pointer; color: #9FCBFF; font-size: 12px; font-weight: 500; min-height: 28px; display: inline-flex; align-items: center; }
-.glist { max-height: 260px; overflow-y: auto; margin-top: 6px; }
-.glist div { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 10px; padding: 7px 0; border-top: 1px solid rgba(255,255,255,0.08); }
-.glist .m { font-size: 11px; color: var(--panel-muted); }
-
-.chip { display: inline-flex; align-items: center; gap: 4px; padding: 1px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; white-space: nowrap; }
-.chip.neg { color: var(--neg); background: color-mix(in srgb, var(--neg) 14%, transparent); }
-.chip.neu { color: var(--muted); background: var(--pill); }
-.chip.pos { color: var(--pos); background: color-mix(in srgb, var(--pos) 16%, transparent); }
-.panel .chip.neu { color: var(--panel-muted); background: rgba(255,255,255,0.06); }
-.panel .chip.neg { color: #F0A25C; } .panel .chip.pos { color: #7FB4F0; }
-.tabs { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
-.tabs button { min-height: 36px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--hair); background: var(--pill); color: var(--muted); cursor: pointer; font-size: 13px; font-weight: 500; }
-.tabs button[aria-pressed="true"] { color: var(--text); border-color: var(--acc); box-shadow: 0 0 12px var(--aglow); }
-.tabs button.dim { opacity: 0.6; }
-.tabs .push { margin-left: auto; }
-.news { display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--hair); }
-.news .r { font-family: var(--font-display); font-size: 22px; font-weight: 600; color: var(--acc); line-height: 1.1; }
-.news b { display: block; font-family: var(--font-display); font-size: 17px; font-weight: 600; line-height: 1.22; }
-.news .meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); margin-top: 4px; }
-.news details { margin-top: 6px; font-size: 13px; }
-.news summary { cursor: pointer; color: var(--acc); font-size: 12px; font-weight: 500; min-height: 28px; display: inline-flex; align-items: center; }
-.news ul { margin: 6px 0 0; padding-left: 18px; color: var(--muted); display: flex; flex-direction: column; gap: 4px; }
-.news ul em { font-style: normal; color: var(--text); }
-.src-chips { display: flex; flex-wrap: wrap; gap: 6px; }
-.src-chips span { padding: 3px 10px; border-radius: 999px; border: 1px solid var(--hair); font-size: 12px; }
-.src-chips a { text-decoration: none; }
-.bul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; font-size: 14px; }
-.rep-intro { margin: 0; font-size: 15px; line-height: 1.55; max-width: 70ch; }
-.rep-sec { padding-top: 10px; border-top: 1px solid var(--hair); display: flex; flex-direction: column; gap: 4px; }
-.rep-sec b { font-family: var(--font-display); font-size: 17px; font-weight: 600; }
-.rep-sec p { margin: 0; font-size: 14px; color: var(--muted); max-width: 70ch; }
-.rep-sec .from { font-size: 12px; color: var(--muted); font-family: var(--font-mono); letter-spacing: 0.04em; }
-.rep-sec.hu { border-top-color: var(--acc); }
-.tl { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
-.tl li { display: grid; grid-template-columns: 92px 18px minmax(0, 1fr); gap: 12px; align-items: start; }
-.tl .when { font-family: var(--font-mono); font-size: 11px; color: var(--muted); padding-top: 3px; text-align: right; }
-.tl .pin { position: relative; height: 100%; min-height: 48px; }
-.tl .pin::before { content: ""; position: absolute; left: 8px; top: 0; bottom: 0; width: 2px; background: var(--hair); }
-.tl .pin::after { content: ""; position: absolute; left: 3px; top: 4px; width: 12px; height: 12px; border-radius: 50%; background: var(--acc); box-shadow: 0 0 0 4px var(--aglow); }
-.tl .what { padding-bottom: 14px; font-size: 14px; }
-.tl .what span { display: block; font-size: 12px; color: var(--muted); margin-top: 2px; }
-@media (max-width: 520px) { .tl li { grid-template-columns: 64px 18px minmax(0, 1fr); } }
-.warn { border: 1px dashed var(--muted); border-radius: 10px; padding: 8px 12px; font-size: 13px; color: var(--muted); }
-.kc { border: 1px solid var(--hair); border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 4px; background: var(--pill); }
-.kc b { font-family: var(--font-display); font-size: 17px; font-weight: 600; }
-.kc .m { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 8px; }
-.seg { display: inline-flex; gap: 3px; }
-.seg i { display: block; width: 22px; height: 7px; border-radius: 4px; background: var(--track); }
-.seg i.f { background: var(--acc); }
-.donut-wrap { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 22px; align-items: center; }
-@media (max-width: 640px) { .donut-wrap { grid-template-columns: minmax(0, 1fr); justify-items: center; } }
-.donut-wrap svg { width: 200px; height: 200px; }
-.dl { display: flex; flex-direction: column; gap: 8px; width: 100%; }
-.dl div { display: grid; grid-template-columns: 12px minmax(0, 1fr) auto auto; gap: 10px; align-items: center; font-size: 13px; }
-.dl i { width: 12px; height: 12px; border-radius: 3px; display: block; }
-.dl .n { font-family: var(--font-mono); font-size: 12px; color: var(--panel-muted); font-variant-numeric: tabular-nums; }
-.dl .p { font-family: var(--font-display); font-weight: 600; font-size: 15px; min-width: 48px; text-align: right; font-variant-numeric: tabular-nums; }
-.polls { list-style: none; margin: 0; padding: 0; max-height: 360px; overflow-y: auto; border-top: 1px solid var(--hair); }
-.polls li { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--hair); font-size: 13px; }
-.polls .d { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
-.polls span { color: var(--muted); font-size: 12px; }
-.filters { display: flex; flex-wrap: wrap; gap: 8px; }
-.filters label { display: flex; flex-direction: column; gap: 3px; font-size: 11px; color: var(--muted); }
-.filters select { min-height: 38px; padding: 0 10px; border-radius: 9px; border: 1px solid var(--hair); background: var(--page-a); color: var(--text); font-size: 13px; }
-.art { display: flex; flex-direction: column; gap: 3px; padding: 10px 0; border-bottom: 1px solid var(--hair); }
-.art a { font-size: 14px; font-weight: 600; line-height: 1.35; color: var(--text); text-decoration: none; }
-.art a:hover { color: var(--acc); text-decoration: underline; }
-.art .meta { font-size: 12px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-.empty { padding: 16px 0; color: var(--muted); font-size: 13px; }
-.panel .empty { color: var(--panel-muted); }
-.vbox { border-radius: 12px; overflow: hidden; border: 1px solid rgba(255,255,255,0.08); }
-.vbox canvas { width: 100%; height: auto; display: block; background: #f2efe6; }
-.vbox iframe { width: 100%; aspect-ratio: 1 / 1; min-height: 470px; border: 0; display: block; background: var(--panel-b); }
-.vctl { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 12px; color: var(--muted); }
-.vctl button { min-height: 34px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--hair); background: var(--pill); cursor: pointer; font-size: 13px; }
-.method { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 26px; }
-@media (max-width: 640px) { .method { grid-template-columns: minmax(0, 1fr); } }
-.method div { padding-top: 10px; border-top: 1px solid var(--hair); display: flex; flex-direction: column; gap: 4px; }
-.method b { font-family: var(--font-display); font-size: 17px; font-weight: 600; }
-.method p { margin: 0; font-size: 14px; color: var(--muted); }
-.resume { display: inline-flex; align-items: center; gap: 10px; min-height: 40px; padding: 0 16px; border-radius: 999px; cursor: pointer; border: 1px solid var(--hair); background: var(--pill); color: var(--text); font-size: 13px; font-weight: 500; align-self: flex-start; }
-.err { position: fixed; z-index: 250; top: calc(var(--top) + 12px); left: 50%; transform: translateX(-50%); margin: 0; width: min(900px, calc(100% - 24px)); box-shadow: var(--shadow); box-sizing: border-box; padding: 10px 14px; border-radius: 12px; background: color-mix(in srgb, var(--neg) 22%, var(--page-a)); border: 1px solid var(--neg); font-size: 14px; }
-.loading { color: var(--muted); font-size: 14px; padding: 24px 0; }
-
-/* Hírszalag */
-.ticker { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(18px + env(safe-area-inset-bottom, 0px)); z-index: 200; display: flex; align-items: center; gap: 10px; max-width: calc(100% - 32px); box-sizing: border-box; padding: 6px 14px 6px 6px; border-radius: 999px; background: var(--bar); border: 1px solid var(--hair); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); box-shadow: 0 10px 30px rgba(0,0,0,0.35); font-size: 13px; }
-.ticker button { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--hair); background: var(--pill); cursor: pointer; display: grid; place-items: center; flex-shrink: 0; }
-.ticker .tk { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: opacity 0.3s; }
-.ticker .tk b { font-weight: 600; }
-.ticker .lbl { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--acc); flex-shrink: 0; }
-@media (max-width: 640px) { .ticker .lbl { display: none; } }
-
-/* Lapjelző sáv (asztali) és folyamatjelző (mobil) */
-.rail { position: fixed; right: max(24px, env(safe-area-inset-right, 0px)); top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 6px; z-index: 200; }
-.rail button { display: flex; align-items: center; justify-content: flex-end; gap: 10px; min-height: 30px; border: 0; background: none; cursor: pointer; padding: 0; font-size: 12px; color: var(--muted); text-align: right; }
-.rail .d { width: 7px; height: 7px; border-radius: 50%; background: var(--dot-off); flex-shrink: 0; transition: all 0.3s ease; }
-.rail button[aria-current="true"] { color: var(--text); font-weight: 600; }
-.rail button[aria-current="true"] .d { width: 12px; height: 12px; background: var(--chart); box-shadow: 0 0 0 4px var(--aglow), 0 0 14px var(--chart); }
-.rail button:hover { color: var(--text); }
-@media (max-width: 1099px) { .rail { display: none; } }
-.progress { position: fixed; top: calc(var(--top) + 8px); left: max(16px, env(safe-area-inset-left, 0px)); right: max(16px, env(safe-area-inset-right, 0px)); z-index: 200; display: none; gap: 4px; }
-.progress span { flex: 1; height: 3px; border-radius: 2px; background: var(--track); transition: background 0.3s; }
-.progress span.on { background: var(--chart); box-shadow: 0 0 8px var(--chart); }
-@media (max-width: 1099px) { .progress { display: flex; } }
-
-@media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; } }
-</style>
-<style>
+/* Facebook-figyelő-specifikus komponensek. A közös stílus: ../assets/glossy.css (glossy szál). */
 /* --- Facebook-figyelő kiegészítések --- */
-.panel a { color: #F7C98A; }
 .tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
 @media (max-width: 640px) { .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .tile { padding: 14px; border-radius: 12px; background: linear-gradient(160deg, var(--panel-a), var(--panel-b)); border: 1px solid rgba(255,255,255,0.07); color: var(--panel-fg); display: flex; flex-direction: column; gap: 4px; }
@@ -344,50 +102,10 @@ html.nappali .ov { background: rgba(60, 50, 30, 0.35); }
 </style>
 </head>
 <body>
-<header class="top">
-  <div class="top-in">
-    <div class="brand">
-      <a class="logo" href="../" aria-label="Figyelő – vissza a kiadványválasztóhoz">Figyelő</a>
-      <span class="edition mono" id="edition">Éjszakai kiadás</span>
-      <span class="sep"></span>
-      <div class="menu" id="menu">
-        <button class="menu-btn" id="menu-btn" type="button" aria-haspopup="true" aria-expanded="false">
-          <span>Facebook-figyelő</span>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
-        </button>
-        <ul class="menu-list" id="menu-list" hidden>
-          <li><a href="../hirek/"><span class="lbl"><span class="dot" style="background:var(--hir)"></span>Hírfigyelő</span><span class="mono muted" style="font-size:10px">10 lap</span></a></li>
-          <li><a href="./" aria-current="page"><span class="lbl"><span class="dot" style="background:var(--fb)"></span>Facebook-figyelő</span><span class="mono muted" style="font-size:10px">10 lap</span></a></li>
-          <li><span class="dis"><span class="lbl"><span class="dot" style="background:var(--koz)"></span>Kisközösségek</span><span class="mono muted" style="font-size:10px">Hamarosan</span></span></li>
-          <li><a href="../"><span class="lbl">← Kiadványválasztó</span></a></li>
-        </ul>
-      </div>
-    </div>
-    <div class="toggle" role="group" aria-label="Kiadás">
-      <button type="button" id="t-night" aria-pressed="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
-        <span class="t-lbl">Éjszakai</span>
-      </button>
-      <button type="button" id="t-day" aria-pressed="false">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
-        <span class="t-lbl">Nappali</span>
-      </button>
-    </div>
-  </div>
-</header>
-
-<canvas class="waves" id="waves" aria-hidden="true"></canvas>
-<div class="halo" aria-hidden="true"></div>
-
-<main aria-label="Facebook-figyelő">
-  <div class="err" id="err" role="alert" hidden></div>
-  <div class="progress" id="progress" aria-hidden="true"></div>
-  <div class="scroller" id="scroller" tabindex="-1"></div>
-  <nav class="rail" id="rail" aria-label="A rovat lapjai"></nav>
-</main>
 <div id="modal"></div>
 
 <script src="../assets/config.js"></script>
+<script src="../assets/figyelo-lapok.js"></script>
 <script>
 (function () {
 "use strict";
@@ -642,110 +360,30 @@ function renderModal() {
 }
 function closePost() { post = null; renderModal(); }
 
-/* ---------- lapok felépítése ---------- */
-let slots = [], laps = [], active = -1, ticking = false;
-function build() {
-  const total = LAPS.length;
-  $("scroller").innerHTML = LAPS.map((lap, i) => '<section class="slot" id="lap-' + (i + 1) + '" aria-label="' + (i + 1) + ". lap: " + esc(lap.short) + '"><article class="lap"><div class="lap-top mono"><span>' + (i + 1) + ". lap · " + esc(lap.short) + "</span><span>Facebook-figyelő · " + (i + 1) + " / " + total + "</span></div>" +
-    (lap.type === "overview" ? "" : '<h2 class="lap-title">' + esc(lap.title) + "</h2>" + (lap.kicker ? '<span class="kick mono">' + esc(lap.kicker) + "</span>" : "")) +
-    '<div class="lap-body" id="lb-' + i + '"><p class="loading">Betöltés…</p></div></article></section>').join("");
-  $("rail").innerHTML = LAPS.map((lap, i) => '<button type="button" data-goto="' + i + '"><span>' + (i + 1) + " · " + esc(lap.short) + '</span><span class="d"></span></button>').join("");
-  $("progress").innerHTML = LAPS.map(() => "<span></span>").join("");
-  slots = Array.prototype.slice.call(document.querySelectorAll("#scroller .slot"));
-  laps = slots.map(s => s.querySelector(".lap"));
-}
-function renderLap(i) {
-  const box = $("lb-" + i);
-  try { box.innerHTML = R[LAPS[i].type](); }
-  catch (e) { box.innerHTML = '<p class="empty">Ezt a lapot nem sikerült megjeleníteni (' + esc(e.message) + ").</p>"; }
-}
 
-/* ---------- görgetés, 3D átmenet ---------- */
-function headH() { return document.querySelector(".top").offsetHeight; }
-function goTo(i, smooth) { const s = slots[i]; if (!s) return; const y = s.getBoundingClientRect().top + window.scrollY - headH(); window.scrollTo({ top: Math.max(0, y), behavior: smooth && !reduced ? "smooth" : "auto" }); }
-function update() {
-  ticking = false;
-  const hh = headH(), h = Math.max(1, window.innerHeight - hh); let idx = 0;
-  for (let i = 0; i < slots.length; i++) {
-    const rc = slots[i].getBoundingClientRect(), topE = rc.top - hh, bot = rc.bottom - hh;
-    let a = topE > 0 ? topE / h : (bot < h ? (bot - h) / h : 0);
-    if (topE <= h * 0.45) idx = i;
-    const lap = laps[i];
-    if (reduced) { lap.style.transform = ""; lap.style.opacity = ""; continue; }
-    a = Math.max(-1.3, Math.min(1.3, a));
-    const abs = Math.abs(a), k = Math.min(1, abs);
-    let rot, ty, origin;
-    if (a >= 0) { rot = -42 * k; ty = -a * h * 0.24; origin = "50% 0%"; } else { rot = 52 * k; ty = abs * h * 0.22; origin = "50% 100%"; }
-    lap.style.transformOrigin = origin;
-    lap.style.transform = "perspective(1600px) translateY(" + ty.toFixed(1) + "px) rotateX(" + rot.toFixed(2) + "deg) scale(" + (1 - 0.1 * k).toFixed(3) + ")";
-    lap.style.opacity = (1 - 0.6 * k).toFixed(3);
-    slots[i].style.zIndex = String(100 - Math.round(abs * 10));
-  }
-  if (idx !== active) setActive(idx);
-}
-function setActive(idx) {
-  active = idx;
-  document.querySelectorAll("#rail button").forEach((b, i) => b.setAttribute("aria-current", i === idx ? "true" : "false"));
-  document.querySelectorAll("#progress span").forEach((s, i) => s.classList.toggle("on", i <= idx));
-  try { history.replaceState(null, "", idx > 0 ? "#lap-" + (idx + 1) : location.pathname + location.search); } catch (e) {}
-}
-window.addEventListener("scroll", () => { if (!ticking) { ticking = true; requestAnimationFrame(update); } }, { passive: true });
-window.addEventListener("resize", () => { goTo(active < 0 ? 0 : active, false); update(); });
+/* ---------- lapmotor (közös: ../assets/figyelo-lapok.js, glossy szál) ---------- */
+Figyelo.oldal({ rovat: "fb", alap: "../" });
+const LM = Figyelo.lapok({ nev: "Facebook-figyelő", lapok: LAPS, rajzolo: R, allapot: st });
 
-/* ---------- kattintások ---------- */
+/* ---------- kattintások (rovatspecifikus; a data-goto / data-set / data-filt a lapmotoré) ---------- */
 document.addEventListener("click", e => {
   const inModal = e.target.closest("#modal");
   const c = e.target.closest("[data-close]");
   if (c && (e.target.closest(".x") || !e.target.closest(".dlg"))) { closePost(); return; }
-  const g = e.target.closest("[data-goto]");
-  if (g) { goTo(parseInt(g.getAttribute("data-goto"), 10), true); return; }
   const o = e.target.closest("[data-open]");
   if (o) { e.preventDefault(); openPost(o.getAttribute("data-open")); return; }
   const mt = e.target.closest("[data-mtab]");
   if (mt) { st.mtab = +mt.getAttribute("data-mtab"); renderModal(); return; }
   const rv = e.target.closest("[data-reveal]");
-  if (rv) { revealed.add(rv.getAttribute("data-reveal")); inModal ? renderModal() : rerender(rv); return; }
+  if (rv) { revealed.add(rv.getAttribute("data-reveal")); inModal ? renderModal() : LM.ujra(rv); return; }
   const th = e.target.closest("[data-thread]");
-  if (th) { const id = th.getAttribute("data-thread"); opened.has(id) ? opened.delete(id) : opened.add(id); inModal ? renderModal() : rerender(th); return; }
-  const s = e.target.closest("[data-set]");
-  if (s) { st[s.getAttribute("data-set")] = s.getAttribute("data-val"); rerender(s); }
+  if (th) { const id = th.getAttribute("data-thread"); opened.has(id) ? opened.delete(id) : opened.add(id); inModal ? renderModal() : LM.ujra(th); }
 });
-document.addEventListener("change", e => {
-  const f = e.target.closest("[data-filt]");
-  if (f) { st[f.getAttribute("data-filt")] = f.value; rerender(f, "s-" + f.getAttribute("data-filt")); }
-});
-document.addEventListener("keydown", e => { if (e.key === "Escape") { if (post) closePost(); closeMenu(); } });
-function rerender(el, focusId) {
-  const body = el.closest(".lap-body"); if (!body) return;
-  const i = parseInt(body.id.slice(3), 10), y = window.scrollY;
-  renderLap(i); window.scrollTo(0, y);
-  if (focusId && $(focusId)) $(focusId).focus();
-  update();
-}
-
-/* ---------- kiadás, menü ---------- */
-let dateStr = "";
-try { dateStr = new Intl.DateTimeFormat("hu-HU", { month: "long", day: "numeric" }).format(new Date()); } catch (e) {}
-function setEdition(day, save) {
-  document.documentElement.classList.toggle("nappali", day);
-  $("t-night").setAttribute("aria-pressed", day ? "false" : "true");
-  $("t-day").setAttribute("aria-pressed", day ? "true" : "false");
-  $("edition").textContent = (day ? "Nappali kiadás" : "Éjszakai kiadás") + " · " + dateStr;
-  if (save) store.set("figyelo-kiadas", day ? "nappali" : "ejszakai");
-}
-$("t-night").addEventListener("click", () => setEdition(false, true));
-$("t-day").addEventListener("click", () => setEdition(true, true));
-setEdition(store.get("figyelo-kiadas") === "nappali", false);
-function closeMenu() { $("menu-list").hidden = true; $("menu-btn").setAttribute("aria-expanded", "false"); }
-$("menu-btn").addEventListener("click", e => { e.stopPropagation(); const open = $("menu-list").hidden; $("menu-list").hidden = !open; $("menu-btn").setAttribute("aria-expanded", open ? "true" : "false"); });
-document.addEventListener("click", e => { if (!$("menu").contains(e.target)) closeMenu(); });
+document.addEventListener("keydown", e => { if (e.key === "Escape" && post) closePost(); });
 
 /* ---------- indítás ---------- */
 async function start() {
-  const m = /^#lap-(\d+)$/.exec(location.hash || "");
-  build();
-  document.documentElement.classList.add("snap");
-  update();
+  LM.felepit();
   let errMsg = null;
   if (!API || /CSERELD-KI/.test(API)) errMsg = "A Pi címe még nincs beállítva (assets/config.js).";
   else {
@@ -756,62 +394,12 @@ async function start() {
       D = await r.json();
     } catch (e) { errMsg = "A Raspberry Pi nem válaszolt (" + (e.name === "AbortError" ? "időtúllépés" : e.message) + "). Próbáld újra néhány perc múlva."; }
   }
-  if (errMsg) { const b = $("err"); b.hidden = false; b.textContent = "Az adatforrás most nem érhető el. " + errMsg; D = { window_days: 15, last_ingest: null, accounts: [] }; }
+  if (errMsg) { Figyelo.hiba("Az adatforrás most nem érhető el. " + errMsg); D = { window_days: 15, last_ingest: null, accounts: [] }; }
   D.accounts = arr(D.accounts).map(a => Object.assign({ posts: [], reactions: [], debates: [], top_pos: [], top_neg: [] }, a));
-  LAPS.forEach((_, i) => renderLap(i));
-  if (m) goTo(Math.max(0, Math.min(LAPS.length - 1, parseInt(m[1], 10) - 1)), false);
-  update();
+  LM.mindet();
+  LM.indit();
 }
 start();
-})();
-</script>
-
-<script>
-/* Neon hullámok a háttérben: a görgetés finoman elmozdítja a fázisukat */
-(function () {
-  "use strict";
-  var cv = document.getElementById("waves");
-  if (!cv || !cv.getContext) return;
-  var ctx = cv.getContext("2d");
-  var reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  var W = 0, H = 0, dpr = 1, phase = 0, target = 0, running = false;
-  var NIGHT = ["#6FB3FF", "#4FD8FF", "#F2B35B", "#3D7BFF", "#9FE7FF"];
-  var DAY = ["#1F5C99", "#2C7FB8", "#5E45A8", "#3A6EA5", "#4AA3C9"];
-  var WAVES = [
-    { base: 0.30, amp: 0.060, f1: 1.6, f2: 3.1, s1: 1.00, s2: 0.55, off: 0.0 },
-    { base: 0.42, amp: 0.075, f1: 1.2, f2: 2.6, s1: -0.80, s2: 0.70, off: 1.3 },
-    { base: 0.55, amp: 0.090, f1: 1.0, f2: 2.2, s1: 0.65, s2: -0.45, off: 2.6 },
-    { base: 0.67, amp: 0.070, f1: 1.4, f2: 2.9, s1: -0.55, s2: 0.90, off: 3.9 },
-    { base: 0.78, amp: 0.050, f1: 1.8, f2: 3.6, s1: 0.85, s2: -0.65, off: 5.2 }
-  ];
-  function resize() { dpr = Math.min(2, window.devicePixelRatio || 1); W = window.innerWidth; H = window.innerHeight; cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); draw(); }
-  function draw() {
-    var day = document.documentElement.classList.contains("nappali");
-    var cols = day ? DAY : NIGHT;
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.clearRect(0, 0, W, H);
-    ctx.globalCompositeOperation = day ? "source-over" : "lighter";
-    ctx.lineCap = "round"; ctx.lineJoin = "round";
-    var step = W < 600 ? 10 : 8;
-    var passes = day ? [[10, 0.04], [3, 0.10], [1.3, 0.35]] : [[18, 0.05], [7, 0.12], [1.6, 0.85]];
-    WAVES.forEach(function (w, i) {
-      ctx.beginPath();
-      for (var x = -step; x <= W + step; x += step) {
-        var u = x / W * Math.PI * 2;
-        var y = H * w.base + H * w.amp * Math.sin(u * w.f1 + phase * w.s1 + w.off) + H * w.amp * 0.45 * Math.sin(u * w.f2 - phase * w.s2 + w.off * 1.7);
-        if (x === -step) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-      }
-      ctx.strokeStyle = cols[i];
-      passes.forEach(function (p) { ctx.globalAlpha = p[1]; ctx.lineWidth = p[0]; ctx.stroke(); });
-    });
-    ctx.globalAlpha = 1;
-    ctx.globalCompositeOperation = "source-over";
-  }
-  function loop() { var d = target - phase; if (Math.abs(d) < 0.0005) { phase = target; draw(); running = false; return; } phase += d * 0.07; draw(); window.requestAnimationFrame(loop); }
-  window.addEventListener("scroll", function () { target = window.scrollY * 0.0022; if (reduced) { phase = target; draw(); return; } if (!running) { running = true; window.requestAnimationFrame(loop); } }, { passive: true });
-  window.addEventListener("resize", resize);
-  new MutationObserver(function () { draw(); }).observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
-  resize();
 })();
 </script>
 </body>
