@@ -488,7 +488,7 @@ function debatesHTML(list, showOpen) {
   return '<div class="col">' + list.map(d => '<div class="deb"><div class="hd"><span class="dbadge ' + dcls(d.label) + '">' + esc(d.label) + "</span><span>" + d.n + " válasz" + (d.accName ? " · " + esc(d.accName) : "") + " · „" + esc(short(d.post_title, 48)) + "”</span>" + (d.author ? '<span class="vd mix">A szerző is beszállt</span>' : "") + "</div>" +
     '<div style="font-size:14px;line-height:1.45"><b>Kiinduló komment:</b> „' + textHTML(d.root) + '”</div><div class="dbar" role="img" aria-label="Egyetért ' + d.agree + "%, vitatkozik " + d.dis + '%"><div style="width:' + d.agree + '%;background:var(--pos)"></div><div style="width:' + d.dis + '%;background:var(--neg)"></div></div>' +
     '<div class="note">Egyetért: ' + d.agree + "% · Vitatkozik: " + d.dis + "% · Sértő válasz: " + d.toxic + "</div>" + (d.summary ? '<div style="font-size:13px;color:var(--muted)">' + esc(d.summary) + "</div>" : "") +
-    (showOpen ? '<button type="button" class="link" data-open="' + esc(d.post_id) + '">A poszt megnyitása →</button>' : "") + "</div>").join("") + "</div>";
+    '<div>' + threadHTML({ id: "d:" + d.id, thread: { replies: arr(d.replies), debate: d, summary: "" } }) + '</div>' + (showOpen ? '<button type="button" class="link" data-open="' + esc(d.post_id) + '">A poszt megnyitása →</button>' : "") + "</div>").join("") + "</div>";
 }
 function postRow(p, i, metric) {
   return '<button type="button" class="post" data-open="' + esc(p.id) + '"><span class="r">' + (i + 1) + "</span><span><b>" + esc(p.text ? short(p.text, 160) : "(kép vagy videó szöveg nélkül)") + '</b><span class="meta"><span>' + esc(p.acc.name) + " · " + fmtDate(p.date) + "</span>" + verdict(p.verdict) +
