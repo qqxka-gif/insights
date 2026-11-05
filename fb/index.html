@@ -324,6 +324,16 @@ main { display: block; position: relative; z-index: 1; isolation: isolate; paddi
 .pg .role { font-size: 13px; color: var(--muted); }
 .summary { margin: 0; font-size: 15px; line-height: 1.55; max-width: 70ch; }
 .bars svg { display: block; width: 100%; height: auto; }
+/* Összevetés */
+.cmp-row { display: flex; flex-direction: column; gap: 5px; padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,0.08); }
+.cmp-row.low { opacity: 0.55; }
+.cmp-hd { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; font-size: 13px; }
+.cmp-nm { font-weight: 600; }
+.cmp-nm small { font-weight: 400; color: var(--panel-muted); }
+.cmp-eng { font-family: var(--font-mono); font-size: 11px; color: var(--panel-muted); font-variant-numeric: tabular-nums; }
+.cmp-eng b { font-family: var(--font-display); font-size: 15px; color: var(--panel-fg); }
+.panel .note { color: var(--panel-muted); margin-top: 8px; }
+.scat text { font-family: "IBM Plex Mono", monospace; }
 /* Poszt-részletező */
 .ov { position: fixed; inset: 0; z-index: 400; background: rgba(6, 9, 14, 0.62); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); display: flex; align-items: flex-start; justify-content: center; padding: calc(var(--top) + 16px) 16px 40px; overflow-y: auto; }
 html.nappali .ov { background: rgba(60, 50, 30, 0.35); }
@@ -347,7 +357,7 @@ html.nappali .ov { background: rgba(60, 50, 30, 0.35); }
         </button>
         <ul class="menu-list" id="menu-list" hidden>
           <li><a href="../hirek/"><span class="lbl"><span class="dot" style="background:var(--hir)"></span>Hírfigyelő</span><span class="mono muted" style="font-size:10px">10 lap</span></a></li>
-          <li><a href="./" aria-current="page"><span class="lbl"><span class="dot" style="background:var(--fb)"></span>Facebook-figyelő</span><span class="mono muted" style="font-size:10px">9 lap</span></a></li>
+          <li><a href="./" aria-current="page"><span class="lbl"><span class="dot" style="background:var(--fb)"></span>Facebook-figyelő</span><span class="mono muted" style="font-size:10px">10 lap</span></a></li>
           <li><span class="dis"><span class="lbl"><span class="dot" style="background:var(--koz)"></span>Kisközösségek</span><span class="mono muted" style="font-size:10px">Hamarosan</span></span></li>
           <li><a href="../"><span class="lbl">← Kiadványválasztó</span></a></li>
         </ul>
@@ -421,6 +431,7 @@ const accById = id => (D.accounts.find(a => a.id === id) || {});
 const LAPS = [
   { type: "overview", short: "Áttekintés" },
   { type: "pages", short: "Oldalak rangsora", title: "A figyelt oldalak rangsora", kicker: "Az összes reakció alapján" },
+  { type: "compare", short: "Összevetés", title: "Ki milyen visszhangot kap?", kicker: "Hangulat és interakció 1000 követőre, oldalanként" },
   { type: "tone", short: "Hangulat", title: "Ki hogyan fogadja?", kicker: "Az első szintű kommentek hangulata oldalanként" },
   { type: "posts", short: "Top posztok", title: "A legnépszerűbb posztok", kicker: "Toplista · kattints egy posztra a részletekért" },
   { type: "reactions", short: "Reakciók", title: "Milyen reakciókat kaptak?", kicker: "Reakciók megoszlása oldalanként" },
@@ -514,6 +525,51 @@ const R = {
     return "<div>" + list.map((a, i) => '<div class="rank"><span class="r">' + (i + 1) + '</span><div><span class="lbl">' + esc(a.name) + '</span> <span class="sub">· ' + esc(a.role) + '</span><div class="track"><div class="fill" style="width:' + ((a.reactions_total || 0) / max * 100).toFixed(1) + '%"></div></div><span class="sub">' + a.post_count + " poszt · legutóbb " + fmtDate(a.last_post) + (a.debate_stats ? " · " + a.debate_stats.hot + " heves vita" : "") + '</span></div><span class="v">' + fmtN(a.reactions_total) + "<br>" + verdict(a.tone && a.tone.verdict) + "</span></div>").join("") + "</div>" +
       '<p class="note">A sáv hossza az oldal posztjaira érkezett összes reakció a ' + (D.window_days || 15) + ' napos időszakban.</p>';
   },
+  compare() {
+    const days = D.window_days || 15, MINN = 20;
+    const eng = a => (a.engagement && a.engagement.per1000 != null) ? a.engagement.per1000 : null;
+    const fmtD = (v, d) => v == null ? "–" : v.toLocaleString("hu-HU", { maximumFractionDigits: d, minimumFractionDigits: d });
+    const fol = a => a.followers ? fmtN(a.followers) + " követő" : "követőszám nélkül";
+    const withTone = D.accounts.filter(a => a.tone && a.tone.n).sort((a, b) => (b.tone.crit - a.tone.crit) || (a.tone.sup - b.tone.sup));
+    const rows = withTone.map(a => { const t = a.tone, e = eng(a);
+      return '<div class="cmp-row' + (t.n < MINN ? " low" : "") + '"><div class="cmp-hd"><span class="cmp-nm">' + esc(a.name) + ' <small>· ' + fmtN(t.n) + " komment" + (t.n < MINN ? " · kevés adat" : "") + '</small></span><span class="cmp-eng">' + (e != null ? "<b>" + fmtD(e, 1) + "</b> / 1000 követő" : "nincs követőszám") + "</span></div>" +
+        '<div class="sbar" role="img" aria-label="' + esc(a.name) + ": támogató " + t.sup + "%, semleges " + t.neu + "%, kritikus " + t.crit + '%"><div style="width:' + t.sup + "%;background:" + TONE_COL.sup + '"></div><div style="width:' + t.neu + "%;background:" + TONE_COL.neu + '"></div><div style="width:' + t.crit + "%;background:" + TONE_COL.crit + '"></div></div></div>'; }).join("");
+    const noTone = D.accounts.filter(a => !(a.tone && a.tone.n)).map(a => a.name);
+    const p1 = panel("Kommenthangulat oldalanként", "elmúlt " + days + " nap · a legkritikusabb felül",
+      (rows ? '<div>' + rows + "</div>" : '<p class="empty">Még nincs elemzett komment.</p>') +
+      '<div class="slegend" style="margin-top:10px;color:var(--panel-muted)"><span><i style="background:' + TONE_COL.sup + '"></i>Támogató</span><span><i style="background:' + TONE_COL.neu + '"></i>Semleges</span><span><i style="background:' + TONE_COL.crit + '"></i>Kritikus</span></div>' +
+      '<p class="note">Halványabb sor: ' + MINN + " elemzett kommentnél kevesebb, az arány bizonytalan." + (noTone.length ? " Elemzett komment nélkül: " + esc(noTone.join(", ")) + "." : "") + "</p>");
+    // szórásdiagram
+    const pts = D.accounts.filter(a => eng(a) != null && a.engagement.posts_per_week > 0).map(a => ({ a, x: a.engagement.posts_per_week, y: Math.max(0.01, eng(a)), net: a.tone && a.tone.n ? (a.tone.sup - a.tone.crit) : null, n: a.tone ? a.tone.n || 0 : 0 }));
+    let p2;
+    if (pts.length < 2) p2 = panel("Gyakoriság és visszhang", "elmúlt " + days + " nap", '<p class="empty">Ehhez legalább két oldal követőszáma kell. A követőszámot a gyűjtő a következő reggeli futásnál olvassa be.</p>');
+    else {
+      const sm = window.innerWidth < 600, W = sm ? 360 : 640, H = sm ? 300 : 340, L = 50, Rr = 16, T = 14, B = 40;
+      const xmax = Math.max(1, ...pts.map(p => p.x)) * 1.12;
+      let ylo = Math.floor(Math.log10(Math.min(...pts.map(p => p.y)))), yhi = Math.ceil(Math.log10(Math.max(...pts.map(p => p.y))));
+      if (yhi === ylo) yhi++;
+      const X = v => L + (W - L - Rr) * v / xmax, Y = v => T + (H - T - B) * (1 - (Math.log10(v) - ylo) / (yhi - ylo));
+      let s = '<svg class="scat" viewBox="0 0 ' + W + " " + H + '" role="img" aria-label="Szórásdiagram: posztolási gyakoriság és interakció 1000 követőre">';
+      for (let e = ylo; e <= yhi; e++) { const v = Math.pow(10, e), y = Y(v); s += '<line x1="' + L + '" x2="' + (W - Rr) + '" y1="' + y.toFixed(1) + '" y2="' + y.toFixed(1) + '" stroke="var(--panel-grid)"/><text x="' + (L - 6) + '" y="' + (y + 4).toFixed(1) + '" text-anchor="end" fill="var(--panel-muted)" font-size="10">' + fmtD(v, e < 0 ? -e : 0) + "</text>"; }
+      const xs = Math.max(1, Math.ceil(xmax / 6));
+      for (let v = 0; v <= xmax; v += xs) { const x = X(v); s += '<line x1="' + x.toFixed(1) + '" x2="' + x.toFixed(1) + '" y1="' + T + '" y2="' + (H - B) + '" stroke="var(--panel-grid)"/><text x="' + x.toFixed(1) + '" y="' + (H - B + 15) + '" text-anchor="middle" fill="var(--panel-muted)" font-size="10">' + v + "</text>"; }
+      s += '<text x="' + ((L + W - Rr) / 2) + '" y="' + (H - 6) + '" text-anchor="middle" fill="var(--panel-muted)" font-size="10">poszt / hét →</text><text transform="translate(12 ' + ((T + H - B) / 2) + ') rotate(-90)" text-anchor="middle" fill="var(--panel-muted)" font-size="10">interakció / poszt / 1000 követő (log)</text>';
+      const col = net => net == null ? "var(--neu)" : net >= 0 ? "color-mix(in srgb, var(--pos) " + Math.min(100, 35 + net) + "%, var(--neu))" : "color-mix(in srgb, var(--neg) " + Math.min(100, 35 - net) + "%, var(--neu))";
+      pts.sort((p, q) => p.y - q.y).forEach(p => {
+        const x = X(p.x), y = Y(p.y), r = 7 + Math.min(5, Math.sqrt(p.n) / 4);
+        const nm = /önkormányzat/i.test(p.a.name) ? "Önkormányzat" : String(p.a.name).replace(/\s*[-–]\s*TISZA.*$/i, "").replace(/^Dr\.?\s+/, "").split(/\s+/)[0];
+        const right = x < W - 110;
+        s += '<g><circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="' + r.toFixed(1) + '" fill="' + col(p.net) + '" stroke="var(--panel-b)" stroke-width="2"' + (p.n < MINN ? ' fill-opacity="0.55"' : "") + '><title>' + esc(p.a.name + ": " + fmtD(p.x, 1) + " poszt/hét, " + fmtD(p.y, 1) + " interakció/poszt/1000 követő, " + fol(p.a) + (p.net != null ? ", nettó hangulat " + (p.net > 0 ? "+" : "") + p.net + " pont" : "")) + "</title></circle>" +
+          '<text x="' + (right ? x + r + 4 : x - r - 4).toFixed(1) + '" y="' + (y + 4).toFixed(1) + '" text-anchor="' + (right ? "start" : "end") + '" fill="var(--panel-fg)" font-size="11">' + esc(nm) + "</text></g>";
+      });
+      s += "</svg>";
+      const miss = D.accounts.filter(a => eng(a) == null).map(a => a.name);
+      p2 = panel("Gyakoriság és visszhang", "elmúlt " + days + " nap · élő", s +
+        '<div class="slegend" style="margin-top:8px;color:var(--panel-muted)"><span><i style="background:var(--pos);border-radius:50%"></i>inkább támogató kommentek</span><span><i style="background:var(--neu);border-radius:50%"></i>kiegyensúlyozott / nincs adat</span><span><i style="background:var(--neg);border-radius:50%"></i>inkább kritikus kommentek</span></div>' +
+        '<p class="note">Jobbra: gyakrabban posztol. Feljebb: követőihez mérten több reakciót, kommentet és megosztást kap egy-egy posztja. A pont mérete az elemzett kommentek számát jelzi.' + (miss.length ? " Követőszám nélkül, ezért nem szerepel: " + esc(miss.join(", ")) + "." : "") + "</p>");
+    }
+    return p1 + p2;
+  },
   tone() {
     return "<div>" + D.accounts.map(a => { const t = a.tone || {}; return '<div class="tone-row"><div class="hd"><span><span class="nm">' + esc(a.name) + '</span> <span class="note">' + esc(a.role) + "</span></span><span class=\"tabs\">" + verdict(t.verdict) + (t.mood ? '<span class="vd neu">' + esc(t.mood) + "</span>" : "") + "</span></div>" +
       (t.n ? toneBar(t) + '<div class="note">' + fmtN(t.n) + " komment" + (t.delta ? " · " + esc(t.delta) : "") + "</div>" : '<p class="note">Még nincs elemzett komment.</p>') + (t.summary ? "<details><summary>Összefoglaló</summary><p>" + esc(t.summary) + "</p></details>" : "") + "</div>"; }).join("") + "</div>" +
@@ -554,6 +610,7 @@ const R = {
       "<div><b>Forrás</b><p>" + D.accounts.length + " nyilvános, kerületi vonatkozású Facebook-oldal posztjai, kommentjei és válaszai. A gyűjtés naponta egyszer fut, csak olvasással.</p></div>" +
       "<div><b>Időszak</b><p>Az elmúlt " + (D.window_days || 15) + " nap. A régebbi posztok kommentjeit a rendszer néhány napig még frissíti.</p></div>" +
       "<div><b>Mit számolunk?</b><p>Reakciók, kommentek és válaszok száma. A kommentek hangulatát és a vitákat MI becsüli: támogató, semleges, kritikus, valamint sértő.</p></div>" +
+      "<div><b>Interakció 1000 követőre</b><p>Az oldal posztjaira érkezett összes reakció, komment és megosztás, osztva a posztok számával és a követők számával, ezerrel szorozva. Így a nagy és kis oldalak összevethetők, és a sokat posztoló oldal sem kap előnyt. A követőszámot a gyűjtő naponta olvassa le az oldalról.</p></div>" +
       "<div><b>Adatvédelem és korlátok</b><p>A kommentelők nevét nem gyűjtjük, a szövegben szereplő neveket kitakarjuk. A mintában a legtöbbet kedvelt kommentek szerepelnek, nem minden hozzászólás.</p></div>" +
       '</div><p class="note">Automatikus MI-elemzés, hibákat tartalmazhat. A hangulat a kommentelők hangját mutatja, nem a kerület egészének véleményét.</p>';
   }
