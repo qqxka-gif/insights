@@ -163,7 +163,7 @@ const LAPS = [
   { type: "tone", short: "Hangulat", title: "Ki hogyan fogadja?", kicker: "Az első szintű kommentek hangulata oldalanként" },
   { type: "posts", short: "Top posztok", title: "A legnépszerűbb posztok", kicker: "Toplista · kattints egy posztra a részletekért" },
   { type: "reactions", short: "Reakciók", title: "Milyen reakciókat kaptak?", kicker: "Reakciók megoszlása oldalanként" },
-  { type: "comments", short: "Kommentek", title: "A legtöbbet kedvelt kommentek", kicker: "Támogató és kritikus hozzászólások, a kommentelők neve nélkül" },
+  { type: "comments", short: "Kommentek", title: "A legtöbbet kedvelt kommentek", kicker: "Támogató és kritikus hozzászólások, a kommentelők monogramjával" },
   { type: "debates", short: "Viták", title: "Viták a válaszokban", kicker: "Legalább 3 válaszos szálak, a leghevesebb elöl" },
   { type: "kereso", short: "Kulcsszavak", title: "Miről beszélnek?", kicker: "Kulcsszavak a posztokban és a kommentekben" },
   { type: "page", short: "Oldalak részletesen", title: "Oldalak részletesen", kicker: "Összefoglaló és posztok oldalanként" },
@@ -209,7 +209,8 @@ function threadHTML(c) {
       const rel = r.rel === "agree" ? "egyetért" : r.rel === "disagree" ? "vitatkozik" : "semleges";
       const stc = r.stance === "supportive" ? "támogatja a szerzőt" : r.stance === "critical" ? "kritikus a szerzővel" : "semleges a szerzővel";
       const body = hide ? '<div class="hidden"><p aria-hidden="true">' + textHTML(r.text) + '</p><button type="button" class="reveal" data-reveal="' + esc(rid) + '">Sértő tartalom – megjelenítés</button></div>' : '<span class="rtext' + (r.is_author ? " author" : "") + '">' + textHTML(r.text) + "</span>";
-      return '<div class="reply"><div class="rtags"><b>' + (r.is_author ? "A poszt szerzője" : "Névtelen válaszoló") + "</b>" + (r.analyzed ? "<span>" + rel + " · " + stc + "</span>" : "") + (r.toxic ? '<span class="toxtag">Sértő</span>' : "") + fbA(r.link) + "</div>" + body + "</div>";
+      const ki = r.is_author ? "A poszt szerzője" : (r.szerzo_mg || "Névtelen válaszoló");
+      return '<div class="reply"><div class="rtags"><b>' + esc(ki) + (r.cel_mg ? " → " + esc(r.cel_mg) : "") + "</b>" + (r.analyzed ? "<span>" + rel + " · " + stc + "</span>" : "") + (r.toxic ? '<span class="toxtag">Sértő</span>' : "") + fbA(r.link) + "</div>" + body + "</div>";
     }).join("") + "</div>";
   }
   return html;
@@ -219,14 +220,14 @@ function commentsHTML(list, positive, showPost) {
   return "<div>" + list.map((c, i) => {
     const hide = c.toxic && !revealed.has(c.id);
     const body = hide ? '<div class="hidden"><p aria-hidden="true">' + textHTML(c.text) + '</p><button type="button" class="reveal" data-reveal="' + esc(c.id) + '">Sértő tartalom – megjelenítés</button></div>' : '<p class="tx">' + textHTML(c.text) + "</p>";
-    return '<div class="cm"><span class="rk" style="background:' + (positive ? "var(--pos)" : "var(--neg)") + '">' + (i + 1) + '</span><div style="min-width:0"><div class="who">Névtelen kommentelő' + (c.accName ? " · " + esc(c.accName) : "") + (c.toxic ? '<span class="toxtag">Sértő</span>' : "") + "</div>" + body +
+    return '<div class="cm"><span class="rk" style="background:' + (positive ? "var(--pos)" : "var(--neg)") + '">' + (i + 1) + '</span><div style="min-width:0"><div class="who">' + esc(c.szerzo_mg || "Névtelen kommentelő") + (c.accName ? " · " + esc(c.accName) : "") + (c.toxic ? '<span class="toxtag">Sértő</span>' : "") + "</div>" + body +
       '<div class="ft"><span>' + fmtN(c.likes) + " kedvelés · " + fmtDate(c.post_date) + "</span>" + (showPost && c.post_id ? '<button type="button" class="link" data-open="' + esc(c.post_id) + '">„' + esc(short(c.post_title, 50)) + "”</button>" : "") + fbA(c.link) + threadHTML(c) + "</div></div></div>";
   }).join("") + "</div>";
 }
 function debatesHTML(list, showOpen) {
   if (!list.length) return '<p class="empty">Ebben az időszakban nem volt legalább 3 válaszos szál.</p>';
   return '<div class="col">' + list.map(d => '<div class="deb"><div class="hd"><span class="dbadge ' + dcls(d.label) + '">' + esc(d.label) + "</span><span>" + d.n + " válasz" + (d.accName ? " · " + esc(d.accName) : "") + " · „" + esc(short(d.post_title, 48)) + "”</span>" + (d.author ? '<span class="vd mix">A szerző is beszállt</span>' : "") + "</div>" +
-    '<div style="font-size:14px;line-height:1.45"><b>Kiinduló komment:</b> „' + textHTML(d.root) + '”</div><div class="dbar" role="img" aria-label="Egyetért ' + d.agree + "%, vitatkozik " + d.dis + '%"><div style="width:' + d.agree + '%;background:var(--pos)"></div><div style="width:' + d.dis + '%;background:var(--neg)"></div></div>' +
+    '<div style="font-size:14px;line-height:1.45"><b>Kiinduló komment' + (d.szerzo_mg ? " (" + esc(d.szerzo_mg) + ")" : "") + ':</b> „' + textHTML(d.root) + '”</div><div class="dbar" role="img" aria-label="Egyetért ' + d.agree + "%, vitatkozik " + d.dis + '%"><div style="width:' + d.agree + '%;background:var(--pos)"></div><div style="width:' + d.dis + '%;background:var(--neg)"></div></div>' +
     '<div class="note">Egyetért: ' + d.agree + "% · Vitatkozik: " + d.dis + "% · Sértő válasz: " + d.toxic + "</div>" + (d.summary ? '<div style="font-size:13px;color:var(--muted)">' + esc(d.summary) + "</div>" : "") +
     '<div>' + threadHTML({ id: "d:" + d.id, thread: { replies: arr(d.replies), debate: d, summary: "" } }) + '</div>' + (d.link || showOpen ? '<div class="tabs">' + (showOpen ? '<button type="button" class="link" data-open="' + esc(d.post_id) + '">A poszt megnyitása →</button>' : "") + fbA(d.link, "A vita a Facebookon →") + "</div>" : "") + "</div>").join("") + "</div>";
 }
@@ -318,7 +319,7 @@ const R = {
     const key = st.ctab === "neg" ? "top_neg" : "top_pos";
     const list = D.accounts.filter(a => !st.cacc || a.id === st.cacc).flatMap(a => arr(a[key]).map(c => Object.assign({ accName: a.name }, c))).sort((a, b) => (b.likes || 0) - (a.likes || 0)).slice(0, 8);
     return '<div class="tabs" style="justify-content:space-between">' + tabsHTML("ctab", [["pos", "Támogató"], ["neg", "Kritikus"]]) + accSelect("cacc", "Oldal") + "</div>" + commentsHTML(list, st.ctab !== "neg", true) +
-      '<p class="note">A kommentelők nevét nem gyűjtjük; a szövegben szereplő magánszemélyek neve helyén „[név]” áll.</p>';
+      '<p class="note">A kommentelőket monogrammal jelöljük (teljes nevet nem tárolunk); a szövegben szereplő magánszemélyek neve helyén „[név]” áll.</p>';
   },
   debates() {
     const list = D.accounts.filter(a => !st.dacc || a.id === st.dacc).flatMap(a => arr(a.debates).map(d => Object.assign({ accName: a.name }, d))).sort((a, b) => (b.heat || 0) - (a.heat || 0)).slice(0, 8);
@@ -363,7 +364,7 @@ const R = {
       "<div><b>Mit számolunk?</b><p>Reakciók, kommentek és válaszok száma. A kommentek hangulatát és a vitákat MI becsüli: támogató, semleges, kritikus, valamint sértő.</p></div>" +
       "<div><b>Interakció 1000 követőre</b><p>Az oldal posztjaira érkezett összes reakció, komment és megosztás, osztva a posztok számával és a követők számával, ezerrel szorozva. Így a nagy és kis oldalak összevethetők, és a sokat posztoló oldal sem kap előnyt. A követőszámot a gyűjtő naponta olvassa le az oldalról.</p></div>" +
       "<div><b>Kulcsszavak</b><p>A kereső a posztok szövegében és a már elemzett, kitakart kommentekben keres, kis- és nagybetűtől, valamint ékezettől függetlenül, a szavak elejére illesztve. A szerkesztőség által figyelt szavak gombként jelennek meg.</p></div>" +
-      "<div><b>Adatvédelem és korlátok</b><p>A kommentelők nevét nem gyűjtjük, a szövegben szereplő neveket kitakarjuk. A mintában a legtöbbet kedvelt kommentek szerepelnek, nem minden hozzászólás.</p></div>" +
+      "<div><b>Adatvédelem és korlátok</b><p>A kommentelőket csak monogrammal jelöljük, teljes nevet nem tárolunk, és az adat " + (D.window_days || 15) + " nap után törlődik; a vitákban a „→” jelzi, ki kinek válaszol. A szövegben szereplő neveket kitakarjuk. A mintában a legtöbbet kedvelt kommentek szerepelnek, nem minden hozzászólás.</p></div>" +
       '</div><p class="note">Automatikus MI-elemzés, hibákat tartalmazhat. A hangulat a kommentelők hangját mutatja, nem a kerület egészének véleményét.</p>';
   }
 };
