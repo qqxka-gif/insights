@@ -90,6 +90,16 @@
 .cmp-nm small { font-weight: 400; color: var(--panel-muted); }
 .panel .note { color: var(--panel-muted); margin-top: 8px; }
 .scat text { font-family: "IBM Plex Mono", monospace; }
+/* Facebook-link és kulcsszavas kereső */
+.fblink { font-size: 12px; font-weight: 600; color: var(--acc); text-decoration: none; white-space: nowrap; }
+.fblink:hover { text-decoration: underline; }
+.kq-form { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.kq-form input { flex: 1 1 220px; min-height: 38px; padding: 0 12px; border-radius: 9px; border: 1px solid var(--hair); background: var(--page-a); color: var(--text); font: inherit; font-size: 14px; }
+.kq-form button { min-height: 38px; padding: 0 16px; border-radius: 999px; border: 1px solid var(--acc); background: var(--pill); color: var(--text); cursor: pointer; font: inherit; font-size: 13px; font-weight: 600; }
+.hitrow { display: flex; flex-direction: column; gap: 4px; padding: 10px 0; border-bottom: 1px solid var(--hair); }
+.hitrow .meta { font-size: 12px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.hitrow .tx { margin: 0; font-size: 14px; line-height: 1.5; word-break: break-word; }
+.hitrow mark { background: color-mix(in srgb, var(--acc) 30%, transparent); color: inherit; border-radius: 3px; padding: 0 2px; }
 /* Poszt-részletező */
 .ov { position: fixed; inset: 0; z-index: 400; background: rgba(6, 9, 14, 0.62); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); display: flex; align-items: flex-start; justify-content: center; padding: calc(var(--top) + 16px) 16px 40px; overflow-y: auto; }
 html.nappali .ov { background: rgba(60, 50, 30, 0.35); }
@@ -135,10 +145,12 @@ const dcls = l => l === "Elfajult vita" ? "db-bad" : l === "Vita" ? "db-hot" : l
 const initials = n => String(n || "").replace(/^Dr\.?\s+/, "").split(/\s+/).map(w => w[0] || "").join("").slice(0, 2).toUpperCase();
 const textHTML = t => String(t || "").split(/(\[\[.*?\]\])/).filter(Boolean).map(p => p.startsWith("[[") ? "[név]" : esc(p)).join("");
 const short = (t, n) => { const s = String(t || "").replace(/\s+/g, " ").trim(); return s.length > n ? s.slice(0, n - 1) + "…" : s; };
+const fbA = (u, txt) => u ? '<a class="fblink" href="' + esc(safe(u)) + '" target="_blank" rel="noopener noreferrer">' + esc(txt || "Facebookon →") + "</a>" : "";
 const TONE_COL = { sup: "var(--pos)", neu: "var(--neu)", crit: "var(--neg)" };
 
 let D = null;
-const st = { ptab: "comments", ctab: "pos", cacc: "", dacc: "", pacc: "", mtab: 0 };
+const st = { ptab: "comments", ctab: "pos", cacc: "", dacc: "", pacc: "", mtab: 0, kq: "" };
+const KQ = {};   // kulcsszavas keresés: szó → válasz | {loading} | {error}
 const revealed = new Set(), opened = new Set();
 let post = null;
 const accById = id => (D.accounts.find(a => a.id === id) || {});
@@ -153,6 +165,7 @@ const LAPS = [
   { type: "reactions", short: "Reakciók", title: "Milyen reakciókat kaptak?", kicker: "Reakciók megoszlása oldalanként" },
   { type: "comments", short: "Kommentek", title: "A legtöbbet kedvelt kommentek", kicker: "Támogató és kritikus hozzászólások, a kommentelők neve nélkül" },
   { type: "debates", short: "Viták", title: "Viták a válaszokban", kicker: "Legalább 3 válaszos szálak, a leghevesebb elöl" },
+  { type: "kereso", short: "Kulcsszavak", title: "Miről beszélnek?", kicker: "Kulcsszavak a posztokban és a kommentekben" },
   { type: "page", short: "Oldalak részletesen", title: "Oldalak részletesen", kicker: "Összefoglaló és posztok oldalanként" },
   { type: "method", short: "Módszertan", title: "Honnan jönnek a számok?", kicker: "Módszertan és korlátok" }
 ];
@@ -196,7 +209,7 @@ function threadHTML(c) {
       const rel = r.rel === "agree" ? "egyetért" : r.rel === "disagree" ? "vitatkozik" : "semleges";
       const stc = r.stance === "supportive" ? "támogatja a szerzőt" : r.stance === "critical" ? "kritikus a szerzővel" : "semleges a szerzővel";
       const body = hide ? '<div class="hidden"><p aria-hidden="true">' + textHTML(r.text) + '</p><button type="button" class="reveal" data-reveal="' + esc(rid) + '">Sértő tartalom – megjelenítés</button></div>' : '<span class="rtext' + (r.is_author ? " author" : "") + '">' + textHTML(r.text) + "</span>";
-      return '<div class="reply"><div class="rtags"><b>' + (r.is_author ? "A poszt szerzője" : "Névtelen válaszoló") + "</b>" + (r.analyzed ? "<span>" + rel + " · " + stc + "</span>" : "") + (r.toxic ? '<span class="toxtag">Sértő</span>' : "") + "</div>" + body + "</div>";
+      return '<div class="reply"><div class="rtags"><b>' + (r.is_author ? "A poszt szerzője" : "Névtelen válaszoló") + "</b>" + (r.analyzed ? "<span>" + rel + " · " + stc + "</span>" : "") + (r.toxic ? '<span class="toxtag">Sértő</span>' : "") + fbA(r.link) + "</div>" + body + "</div>";
     }).join("") + "</div>";
   }
   return html;
@@ -207,7 +220,7 @@ function commentsHTML(list, positive, showPost) {
     const hide = c.toxic && !revealed.has(c.id);
     const body = hide ? '<div class="hidden"><p aria-hidden="true">' + textHTML(c.text) + '</p><button type="button" class="reveal" data-reveal="' + esc(c.id) + '">Sértő tartalom – megjelenítés</button></div>' : '<p class="tx">' + textHTML(c.text) + "</p>";
     return '<div class="cm"><span class="rk" style="background:' + (positive ? "var(--pos)" : "var(--neg)") + '">' + (i + 1) + '</span><div style="min-width:0"><div class="who">Névtelen kommentelő' + (c.accName ? " · " + esc(c.accName) : "") + (c.toxic ? '<span class="toxtag">Sértő</span>' : "") + "</div>" + body +
-      '<div class="ft"><span>' + fmtN(c.likes) + " kedvelés · " + fmtDate(c.post_date) + "</span>" + (showPost && c.post_id ? '<button type="button" class="link" data-open="' + esc(c.post_id) + '">„' + esc(short(c.post_title, 50)) + "”</button>" : "") + threadHTML(c) + "</div></div></div>";
+      '<div class="ft"><span>' + fmtN(c.likes) + " kedvelés · " + fmtDate(c.post_date) + "</span>" + (showPost && c.post_id ? '<button type="button" class="link" data-open="' + esc(c.post_id) + '">„' + esc(short(c.post_title, 50)) + "”</button>" : "") + fbA(c.link) + threadHTML(c) + "</div></div></div>";
   }).join("") + "</div>";
 }
 function debatesHTML(list, showOpen) {
@@ -215,7 +228,7 @@ function debatesHTML(list, showOpen) {
   return '<div class="col">' + list.map(d => '<div class="deb"><div class="hd"><span class="dbadge ' + dcls(d.label) + '">' + esc(d.label) + "</span><span>" + d.n + " válasz" + (d.accName ? " · " + esc(d.accName) : "") + " · „" + esc(short(d.post_title, 48)) + "”</span>" + (d.author ? '<span class="vd mix">A szerző is beszállt</span>' : "") + "</div>" +
     '<div style="font-size:14px;line-height:1.45"><b>Kiinduló komment:</b> „' + textHTML(d.root) + '”</div><div class="dbar" role="img" aria-label="Egyetért ' + d.agree + "%, vitatkozik " + d.dis + '%"><div style="width:' + d.agree + '%;background:var(--pos)"></div><div style="width:' + d.dis + '%;background:var(--neg)"></div></div>' +
     '<div class="note">Egyetért: ' + d.agree + "% · Vitatkozik: " + d.dis + "% · Sértő válasz: " + d.toxic + "</div>" + (d.summary ? '<div style="font-size:13px;color:var(--muted)">' + esc(d.summary) + "</div>" : "") +
-    '<div>' + threadHTML({ id: "d:" + d.id, thread: { replies: arr(d.replies), debate: d, summary: "" } }) + '</div>' + (showOpen ? '<button type="button" class="link" data-open="' + esc(d.post_id) + '">A poszt megnyitása →</button>' : "") + "</div>").join("") + "</div>";
+    '<div>' + threadHTML({ id: "d:" + d.id, thread: { replies: arr(d.replies), debate: d, summary: "" } }) + '</div>' + (d.link || showOpen ? '<div class="tabs">' + (showOpen ? '<button type="button" class="link" data-open="' + esc(d.post_id) + '">A poszt megnyitása →</button>' : "") + fbA(d.link, "A vita a Facebookon →") + "</div>" : "") + "</div>").join("") + "</div>";
 }
 function postRow(p, i, metric) {
   return '<button type="button" class="post" data-open="' + esc(p.id) + '"><span class="r">' + (i + 1) + "</span><span><b>" + esc(p.text ? short(p.text, 160) : "(kép vagy videó szöveg nélkül)") + '</b><span class="meta"><span>' + esc(p.acc.name) + " · " + fmtDate(p.date) + "</span>" + verdict(p.verdict) +
@@ -311,6 +324,28 @@ const R = {
     const list = D.accounts.filter(a => !st.dacc || a.id === st.dacc).flatMap(a => arr(a.debates).map(d => Object.assign({ accName: a.name }, d))).sort((a, b) => (b.heat || 0) - (a.heat || 0)).slice(0, 8);
     return accSelect("dacc", "Oldal") + debatesHTML(list, true);
   },
+  kereso() {
+    const szavak = arr(D.kulcsszavak);
+    if (!st.kq && szavak.length) st.kq = szavak[0];
+    const q = st.kq, r = q ? KQ[q] : null;
+    if (q && !r) kqLoad(q);
+    let html = (szavak.length ? tabsHTML("kq", szavak.map(w => [w, w])) : "") +
+      '<form class="kq-form" id="kq-form" role="search"><label class="note" for="kq-in" style="flex-basis:100%">Saját keresés (legalább 3 betű; kis- és nagybetű, ékezet nem számít)</label><input id="kq-in" type="search" minlength="3" maxlength="40" value="' + esc(szavak.includes(q) ? "" : q) + '" placeholder="pl. parkolás"><button type="submit">Keresés</button></form>';
+    if (!q) return html + '<p class="empty">Írj be egy szót.</p>';
+    if (!r || r.loading) return html + '<p class="loading">Keresés…</p>';
+    if (r.error) return html + '<p class="empty">' + esc(r.error) + "</p>";
+    const days = r.napok.map(x => x.nap), vals = r.napok.map(x => x.n), max = Math.max(1, ...r.oldalak.map(o => o.n));
+    html += '<div class="tiles"><div class="tile"><b>' + fmtN(r.osszes) + '</b><span>találat: „' + esc(r.q) + '”</span></div><div class="tile"><b>' + fmtN(r.posztban) + '</b><span>posztban</span></div><div class="tile"><b>' + fmtN(r.kommentben) + '</b><span>kommentben, válaszban</span></div><div class="tile"><b>' + r.oldalak.length + "</b><span>oldalon</span></div></div>";
+    if (!r.osszes) return html + '<p class="empty">Az elmúlt ' + r.napok_szama + " napban nem szerepelt ez a szó.</p>";
+    html += '<div class="grid2"><div class="col">' + panel("Előfordulás naponta", "elmúlt " + r.napok_szama + " nap", barChart(days, vals, "Előfordulás naponta")) + "</div>" +
+      '<div class="col side"><h3 class="h3">Oldalanként</h3>' + r.oldalak.map(o => '<div class="rank" style="grid-template-columns:minmax(0,1fr) auto"><div><span class="lbl">' + esc(o.name) + '</span><div class="track"><div class="fill" style="width:' + (o.n / max * 100).toFixed(1) + '%"></div></div></div><span class="v">' + fmtN(o.n) + "</span></div>").join("") + "</div></div>";
+    html += '<h3 class="h3">Találatok</h3><div>' + r.talalatok.map(t => '<div class="hitrow"><div class="meta"><b>' + esc(t.tipus === "poszt" ? "Poszt" : t.tipus === "válasz" ? "Válasz" : "Komment") + "</b><span>" + esc(t.acc_name) + " · " + fmtDate(t.datum) + "</span>" + (t.likes ? "<span>" + fmtN(t.likes) + " kedvelés</span>" : "") + "</div>" +
+      '<p class="tx">' + esc(t.elotte) + "<mark>" + esc(t.talalat) + "</mark>" + esc(t.utana) + "</p>" +
+      '<div class="meta">' + (t.tipus !== "poszt" ? '<button type="button" class="link" data-open="' + esc(t.post_id) + '">„' + esc(short(t.post_title, 50)) + "”</button>" : '<button type="button" class="link" data-open="' + esc(t.post_id) + '">A poszt részletei →</button>') + fbA(t.link) + "</div></div>").join("") + "</div>" +
+      (r.tobb ? '<p class="note">…és még ' + r.tobb + " régebbi találat.</p>" : "") +
+      '<p class="note">A posztok szövegében és az elemzett (kitakart) kommentekben keres, szókezdetre illesztve: a „civil” a „civilek” és a „civilizált” szót is megtalálja. Magánszemély nevére nem lehet keresni.</p>';
+    return html;
+  },
   page() {
     if (!st.pacc && D.accounts[0]) st.pacc = D.accounts[0].id;
     const a = accById(st.pacc);
@@ -327,10 +362,19 @@ const R = {
       "<div><b>Időszak</b><p>Az elmúlt " + (D.window_days || 15) + " nap. A régebbi posztok kommentjeit a rendszer néhány napig még frissíti.</p></div>" +
       "<div><b>Mit számolunk?</b><p>Reakciók, kommentek és válaszok száma. A kommentek hangulatát és a vitákat MI becsüli: támogató, semleges, kritikus, valamint sértő.</p></div>" +
       "<div><b>Interakció 1000 követőre</b><p>Az oldal posztjaira érkezett összes reakció, komment és megosztás, osztva a posztok számával és a követők számával, ezerrel szorozva. Így a nagy és kis oldalak összevethetők, és a sokat posztoló oldal sem kap előnyt. A követőszámot a gyűjtő naponta olvassa le az oldalról.</p></div>" +
+      "<div><b>Kulcsszavak</b><p>A kereső a posztok szövegében és a már elemzett, kitakart kommentekben keres, kis- és nagybetűtől, valamint ékezettől függetlenül, a szavak elejére illesztve. A szerkesztőség által figyelt szavak gombként jelennek meg.</p></div>" +
       "<div><b>Adatvédelem és korlátok</b><p>A kommentelők nevét nem gyűjtjük, a szövegben szereplő neveket kitakarjuk. A mintában a legtöbbet kedvelt kommentek szerepelnek, nem minden hozzászólás.</p></div>" +
       '</div><p class="note">Automatikus MI-elemzés, hibákat tartalmazhat. A hangulat a kommentelők hangját mutatja, nem a kerület egészének véleményét.</p>';
   }
 };
+
+/* ---------- kulcsszavas kereső ---------- */
+async function kqLoad(q) {
+  KQ[q] = { loading: true };
+  try { const r = await fetch(API + "/api/kereses?q=" + encodeURIComponent(q)); const j = await r.json(); KQ[q] = r.ok ? j : { error: j.uzenet || "HTTP " + r.status }; }
+  catch (e) { KQ[q] = { error: "A keresés most nem sikerült (" + e.message + ")." }; }
+  const el = $("kq-form"); if (el && st.kq === q) LM.ujra(el);
+}
 
 /* ---------- poszt-részletező ---------- */
 async function openPost(id) {
@@ -378,6 +422,13 @@ document.addEventListener("click", e => {
   if (th) { const id = th.getAttribute("data-thread"); opened.has(id) ? opened.delete(id) : opened.add(id); inModal ? renderModal() : LM.ujra(th); }
 });
 document.addEventListener("keydown", e => { if (e.key === "Escape" && post) closePost(); });
+document.addEventListener("submit", e => {
+  if (e.target.id !== "kq-form") return;
+  e.preventDefault();
+  const q = ($("kq-in").value || "").replace(/\s+/g, " ").trim();
+  if (q.length < 3) return;
+  st.kq = q; delete KQ[q]; LM.ujra(e.target, "kq-in");
+});
 
 /* ---------- indítás ---------- */
 async function start() {
